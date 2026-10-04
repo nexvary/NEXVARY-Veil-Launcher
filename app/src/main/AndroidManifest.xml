@@ -3,6 +3,8 @@
     <!-- Android 15+ Private Space support. Effective access also requires Veil to be the default HOME app. -->
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
 
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <application
         android:allowBackup="false"
         android:label="@string/app_name"

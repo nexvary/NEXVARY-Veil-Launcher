@@ -92,4 +92,51 @@ class LauncherFlowTest {
         }
     }
 
+    private fun capture(activity: android.app.Activity, name: String) {
+        val view=activity.window.decorView
+        val bitmap=android.graphics.Bitmap.createBitmap(view.width,view.height,android.graphics.Bitmap.Config.ARGB_8888)
+        view.draw(android.graphics.Canvas(bitmap))
+        val file=java.io.File(activity.getExternalFilesDir(null),"$name.png")
+        file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) }
+        bitmap.recycle()
+    }
+    @Test fun decoyMappingRoutesToNotesAndHiddenIdentityIsNotSearchable() {
+        val catalog=com.nexvary.veil.launcher.AppCatalog(context)
+        val app=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true).first { it.packageName!="com.android.settings" }
+        val config=VeilStore(context).load().apply {
+            allowlists[VeilProfile.DECOY]=setOf(app.packageName)
+            rules=listOf(com.nexvary.veil.core.DisguiseRule(app.identity,com.nexvary.veil.core.VeilPresentation.DECOY,"Daily Notes","notes",setOf(VeilProfile.DECOY)))
+        }
+        VeilStore(context).save(config)
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withText("Daily Notes")).perform(click())
+            onView(withHint(R.string.note_hint)).check(matches(isDisplayed()))
+            onView(withText(R.string.back)).perform(click())
+            scenario.onActivity { capture(it,"decoy-grid-en") }
+        }
+        config.rules=config.rules.map { it.copy(presentation=com.nexvary.veil.core.VeilPresentation.HIDDEN) }
+        VeilStore(context).save(config)
+        Assert.assertTrue(catalog.load(config.policy(VeilProfile.DECOY)).none { it.identity==app.identity })
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use {
+            onView(withId(1002)).perform(typeText("Daily Notes"),closeSoftKeyboard())
+            onView(withText("Daily Notes")).check(doesNotExist())
+        }
+    }
+    @Test fun arabicUsesRtlAndRendersGrid() {
+        val original=android.content.res.Configuration(context.resources.configuration)
+        try {
+            context.resources.updateConfiguration(android.content.res.Configuration(original).apply { setLocale(java.util.Locale("ar")) },context.resources.displayMetrics)
+            ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+                scenario.onActivity { activity ->
+                    val grid=activity.findViewById<android.view.View>(1003)
+                    Assert.assertEquals(android.view.View.LAYOUT_DIRECTION_RTL,grid.layoutDirection)
+                    capture(activity,"decoy-grid-ar")
+                }
+                onView(withText(R.string.settings)).perform(click())
+                onView(withText(R.string.back)).perform(click())
+                onView(withId(1003)).check(matches(isDisplayed()))
+            }
+        } finally { context.resources.updateConfiguration(original,context.resources.displayMetrics) }
+    }
+
 }

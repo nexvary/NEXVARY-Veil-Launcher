@@ -19,7 +19,7 @@ import com.nexvary.veil.privateSpace.PrivateSpaceBridge
 import com.nexvary.veil.storage.*
 import java.util.concurrent.Executors
 
-class VeilLauncherActivity : Activity() {
+class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private val catalog by lazy { AppCatalog(this) }
     private val space by lazy { PrivateSpaceBridge(this) }
     private val store by lazy { VeilStore(this) }
@@ -44,7 +44,7 @@ class VeilLauncherActivity : Activity() {
     }
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        if(Build.VERSION.SDK_INT>=33) onBackInvokedDispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT) { showLauncher() }
+        onBackPressedDispatcher.addCallback(this, object: androidx.activity.OnBackPressedCallback(true) { override fun handleOnBackPressed() { showLauncher() } })
         try { config=store.load() } catch (_: Exception) { storageFailed=true }
         val filter=IntentFilter().apply {
             addAction(Intent.ACTION_PROFILE_AVAILABLE); addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
@@ -68,7 +68,6 @@ class VeilLauncherActivity : Activity() {
         unregisterReceiver(profileReceiver); super.onDestroy()
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); showLauncher() }
-    @Deprecated("Platform Back compatibility") override fun onBackPressed() { showLauncher() }
     private fun toast(id: Int) { Toast.makeText(this,id,Toast.LENGTH_LONG).show() }
     private fun save(): Boolean = try { store.save(config); true } catch (_: Exception) { storageFailed=true; emergency(); toast(R.string.storage_error); false }
     private fun utility(key: String) { startActivity(Intent(this,UtilityActivity::class.java).putExtra("utility",key)) }
@@ -184,7 +183,7 @@ class VeilLauncherActivity : Activity() {
         if(authBusy) return
         val input=pinField(R.string.pin)
         val alert=AlertDialog.Builder(this).setView(input).setPositiveButton(R.string.unlock,null).setNegativeButton(R.string.cancel,null).create()
-        dialog=alert; alert.show(); alert.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        dialog=alert; alert.setOnCancelListener { generation++ }; alert.show(); alert.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         alert.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             if(authBusy) return@setOnClickListener
             val pin=input.text.toString().toCharArray(); input.text.clear()
@@ -234,11 +233,12 @@ class VeilLauncherActivity : Activity() {
             authBusy=true; saveButton.isEnabled=false
             val token=generation
             worker.execute {
-                val bindings=try { pairs.mapIndexedNotNull { i,pair -> if(pair[0].isEmpty()) null else PinProfileResolver.bind(pair[0],listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) } } finally { values.forEach { it.fill('\u0000') } }
+                val bindings=try { pairs.mapIndexedNotNull { i,pair -> if(pair[0].isEmpty()) null else PinProfileResolver.bind(pair[0],listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) } } catch (_: Exception) { null } finally { values.forEach { it.fill('\u0000') } }
                 runOnUiThread {
                     authBusy=false
                     if(isDestroyed || token!=generation || page!="setup") return@runOnUiThread
                     if(config.pins.isNotEmpty() && session.current()!=VeilProfile.PRIVACY) { emergency(); return@runOnUiThread }
+                    if(bindings==null) { toast(R.string.invalid); saveButton.isEnabled=true; return@runOnUiThread }
                     config.pins=bindings
                     if(save()) { session.unlock(VeilProfile.PRIVACY,config.timeout); showControl() }
                 }
@@ -260,11 +260,11 @@ class VeilLauncherActivity : Activity() {
         val content=protectedPage(R.string.control) ?: return
         content.addView(VeilUi.button(this,R.string.profiles) { showSetup() })
         content.addView(VeilUi.button(this,R.string.visibility) {
-            AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.privacy),getString(R.string.decoy),getString(R.string.normal))) { _,i -> showApps(listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) }.show()
+            secureDialog(AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.privacy),getString(R.string.decoy),getString(R.string.normal))) { _,i -> showApps(listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) })
         })
         content.addView(VeilUi.button(this,R.string.timeout) {
             val minutes=intArrayOf(1,5,15,30)
-            AlertDialog.Builder(this).setItems(minutes.map { getString(R.string.minutes,it) }.toTypedArray()) { _,i -> if(session.current()==VeilProfile.PRIVACY) { config.timeout=minutes[i]*60_000L; if(save()) session.unlock(VeilProfile.PRIVACY,config.timeout) } }.show()
+            secureDialog(AlertDialog.Builder(this).setItems(minutes.map { getString(R.string.minutes,it) }.toTypedArray()) { _,i -> if(session.current()==VeilProfile.PRIVACY) { config.timeout=minutes[i]*60_000L; if(save()) session.unlock(VeilProfile.PRIVACY,config.timeout) } })
         })
         content.addView(Switch(this).apply { setText(R.string.emergency); isChecked=config.emergencyEnabled
             setOnCheckedChangeListener { _,v -> if(session.current()==VeilProfile.PRIVACY) { config.emergencyEnabled=v; save() } } })
@@ -314,6 +314,10 @@ class VeilLauncherActivity : Activity() {
             } else emergency()
         }.create()
         dialog=alert; alert.show(); alert.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    }
+    private fun secureDialog(builder: AlertDialog.Builder) {
+        dialog?.dismiss()
+        dialog=builder.create().also { it.show(); it.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE) }
     }
     private fun requestHome() {
         if(Build.VERSION.SDK_INT>=29) {
