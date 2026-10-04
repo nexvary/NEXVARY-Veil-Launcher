@@ -21,7 +21,7 @@ Official references:
 - https://developer.android.com/reference/android/content/pm/LauncherApps
 - https://developer.android.com/reference/android/os/UserManager
 
-Requires API 35+, ACCESS_HIDDEN_PROFILES and ROLE_HOME. Classification uses getLauncherUserInfo/userType. Private applications are placed in a separate container only during PRIVACY, never in the main search/grid. Quiet or locked users are not enumerated. Lock/unlock requests use UserManager.requestQuietModeEnabled and never report success based only on issuing a request. Failed duress-lock requests retain local concealment and report the unconfirmed OS lock. Profile available/unavailable broadcasts refresh UI. Android 16's private-space settings IntentSender is accessible only through the protected center.
+Requires API 35+, ACCESS_HIDDEN_PROFILES and ROLE_HOME. Classification uses getLauncherUserInfo/userType. Private applications are placed in a separate container only during PRIVACY, never in the main search/grid. Quiet or locked users are not enumerated. Lock/unlock requests use UserManager.requestQuietModeEnabled and never report success based only on issuing a request. Failed duress-lock requests retain local concealment and report the unconfirmed OS lock in the authenticated center. Profile available/unavailable broadcasts refresh UI. Android 16's private-space settings IntentSender is accessible only through the protected center.
 
 Physical-device and provisioned-private-profile testing are required before release. Unknown secondary-profile classification is treated as private. The separate container has lock/show/hide controls; OS authentication can be required for unlock.
 

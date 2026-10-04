@@ -118,9 +118,9 @@ class LauncherFlowTest {
         config.rules=config.rules.map { it.copy(presentation=com.nexvary.veil.core.VeilPresentation.HIDDEN) }
         VeilStore(context).save(config)
         Assert.assertTrue(catalog.load(config.policy(VeilProfile.DECOY)).none { it.identity==app.identity })
-        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use {
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
             onView(withId(R.id.app_search)).perform(typeText("Daily Notes"),closeSoftKeyboard())
-            onView(withText("Daily Notes")).check(doesNotExist())
+            scenario.onActivity { Assert.assertEquals(0,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
         }
     }
     @Test fun arabicUsesRtlAndRendersGrid() {

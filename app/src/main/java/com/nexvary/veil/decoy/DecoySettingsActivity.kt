@@ -9,7 +9,7 @@ import com.nexvary.veil.VeilUi
 class DecoySettingsActivity : Activity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        val root=VeilUi.root(this)
+        val root=VeilUi.root(this,false)
         root.addView(VeilUi.button(this,R.string.back) { finish() })
         root.addView(VeilUi.text(this,getString(R.string.settings),28f))
         val content=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
@@ -45,7 +45,7 @@ class DecoySettingsActivity : Activity() {
             val colors=intArrayOf(0xff111419.toInt(),0xff172c32.toInt(),0xff242135.toInt())
             android.app.AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.dark),getString(R.string.display),getString(R.string.wallpaper))) { _, i -> root.setBackgroundColor(colors[i]) }.show()
         })
-        content.addView(VeilUi.button(this,R.string.language) { android.app.AlertDialog.Builder(this).setItems(arrayOf("English","العربية")) { _,i ->
+        content.addView(VeilUi.button(this,R.string.language) { android.app.AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.english),getString(R.string.arabic))) { _,i ->
             val locales=android.os.LocaleList.forLanguageTags(if(i==0) "en" else "ar")
             if(android.os.Build.VERSION.SDK_INT>=33) getSystemService(android.app.LocaleManager::class.java).applicationLocales=locales
             else { resources.updateConfiguration(android.content.res.Configuration(resources.configuration).apply { setLocales(locales) },resources.displayMetrics); recreate() }

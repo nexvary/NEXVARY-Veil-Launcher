@@ -64,4 +64,7 @@
     <string name="launch_failed">التطبيق غير متاح</string>
     <string name="locked">مقفلة</string>
     <string name="unlocked">مفتوحة</string>
+    <string name="default_selected">Veil هو اللانشر الافتراضي</string>
+    <string name="english">English</string>
+    <string name="arabic">العربية</string>
 </resources>

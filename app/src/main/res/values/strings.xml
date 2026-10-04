@@ -64,4 +64,7 @@
     <string name="launch_failed">App unavailable</string>
     <string name="locked">Locked</string>
     <string name="unlocked">Unlocked</string>
+    <string name="default_selected">Veil is the default Home</string>
+    <string name="english">English</string>
+    <string name="arabic">العربية</string>
 </resources>

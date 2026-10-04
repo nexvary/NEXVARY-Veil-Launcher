@@ -20,14 +20,14 @@ class UtilityActivity : Activity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         utilityProfile=com.nexvary.veil.auth.VeilRuntime.session.current()
-        val root=VeilUi.root(this)
+        val root=VeilUi.root(this,utilityProfile!=com.nexvary.veil.core.VeilProfile.DECOY)
         root.addView(VeilUi.button(this,R.string.back) { finish() })
         when(intent.getStringExtra("utility")) {
             "notes" -> {
                 root.addView(VeilUi.text(this,getString(R.string.notes),26f))
                 root.addView(VeilUi.text(this,getString(R.string.note_info)))
                 val prefs=getSharedPreferences("utility.notes."+utilityProfile.name,MODE_PRIVATE)
-                val field=EditText(this).apply { id=R.id.note_input; setHint(R.string.note_hint); setText(prefs.getString("text","")); maxLines=12 }
+                val field=EditText(this).apply { id=R.id.note_input; isSaveEnabled=false; setHint(R.string.note_hint); setText(prefs.getString("text","")); maxLines=12 }
                 root.addView(field,LinearLayout.LayoutParams(-1,0,1f))
                 root.addView(VeilUi.button(this,R.string.save) { if(com.nexvary.veil.auth.VeilRuntime.session.current()==utilityProfile) prefs.edit().putString("text",field.text.toString().take(10_000)).apply() else finish() })
             }

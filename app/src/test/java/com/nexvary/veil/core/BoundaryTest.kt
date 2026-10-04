@@ -26,6 +26,17 @@ class BoundaryTest {
         assertTrue(engine.decide(app,VeilProfile.PRIVACY,listOf(decoy.copy(presentation=VeilPresentation.DISGUISED))).launchRealTarget)
         assertTrue(engine.decide(app.copy(userSerial=10),VeilProfile.DECOY,listOf(decoy)).launchRealTarget)
     }
+    @Test fun packageWideHiddenRuleCoversAlternateActivitiesButNotAnotherUser() {
+        val a=AppIdentity("secret","Primary",9)
+        val b=a.copy(className="Alternate")
+        val rule=DisguiseRule(a.copy(className=null),VeilPresentation.HIDDEN)
+        val engine=VeilPolicyEngine()
+        assertFalse(engine.decide(a,VeilProfile.DECOY,listOf(rule)).visible)
+        assertFalse(engine.decide(b,VeilProfile.DECOY,listOf(rule)).visible)
+        assertTrue(engine.decide(b.copy(userSerial=10),VeilProfile.DECOY,listOf(rule)).visible)
+        val allowed=ProfilePolicy(VeilProfile.DECOY,setOf("secret|9"),enforceAllowlist=true)
+        assertTrue(allowed.allows(a)); assertFalse(allowed.allows(a.copy(userSerial=10)))
+    }
     @Test fun calculatorHasOperatorPrecedenceAndSignedOperands() {
         assertEquals(14.0,CalculatorEngine.calculate("2+3*4"),0.0)
         assertEquals(-2.0,CalculatorEngine.calculate("6/-3"),0.0)

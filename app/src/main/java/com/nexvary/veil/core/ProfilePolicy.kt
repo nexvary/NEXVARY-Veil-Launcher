@@ -17,5 +17,5 @@ data class ProfilePolicy(
     val enforceAllowlist: Boolean = false
 ) {
     fun allows(identity: AppIdentity): Boolean =
-        (!enforceAllowlist && allowedPackages.isEmpty()) || identity.packageName in allowedPackages
+        (!enforceAllowlist && allowedPackages.isEmpty()) || identity.packageName in allowedPackages || "${identity.packageName}|${identity.userSerial}" in allowedPackages
 }

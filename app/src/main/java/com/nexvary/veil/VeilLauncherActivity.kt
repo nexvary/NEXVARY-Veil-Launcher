@@ -26,6 +26,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private val session = VeilRuntime.session
     private var config = VeilConfig()
     private var storageFailed=false
+    private var privateLockConfirmed: Boolean?=null
     private var page="home"
     private var renderedProfile=VeilProfile.DECOY
     private var authBusy=false
@@ -52,6 +53,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             addAction(Intent.ACTION_SCREEN_OFF)
         }
         if(Build.VERSION.SDK_INT>=33) registerReceiver(profileReceiver,filter,Context.RECEIVER_NOT_EXPORTED) else registerReceiver(profileReceiver,filter)
+        privateLockConfirmed=space.lockAll()
         showLauncher()
     }
     override fun onResume() {
@@ -78,22 +80,21 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     }
     private fun emergency() {
         generation++; dialog?.dismiss(); session.lock()
-        val locked=space.lockAll()
+        privateLockConfirmed=space.lockAll()
         showLauncher()
-        // Do not announce a lock success Android has not confirmed.
-        if(!locked) toast(R.string.private_failed)
+        // Unconfirmed platform lock is reported only inside the authenticated center.
     }
     private fun showLauncher() {
         page="home"
         val profile=session.current()
         renderedProfile=profile
-        val root=VeilUi.root(this)
+        val root=VeilUi.root(this,profile!=VeilProfile.DECOY)
         val clock=TextClock(this).apply {
             format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=38f; gravity=Gravity.CENTER; id=R.id.home_clock
             setOnLongClickListener { if(!storageFailed) { if(config.pins.isEmpty()) showSetup() else showPin() }; true }
         }
         root.addView(clock)
-        val search=EditText(this).apply { id=R.id.app_search; setHint(R.string.search); isSingleLine=true
+        val search=EditText(this).apply { id=R.id.app_search; isSaveEnabled=false; setHint(R.string.search); isSingleLine=true
             setOnLongClickListener { if(config.emergencyEnabled) emergency(); true } }
         root.addView(search)
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
@@ -183,7 +184,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private fun showPin() {
         if(authBusy) return
         val input=pinField(R.string.pin)
-        val alert=AlertDialog.Builder(this).setView(input).setPositiveButton(R.string.unlock,null).setNegativeButton(R.string.cancel,null).create()
+        val alert=AlertDialog.Builder(this).setView(input).setPositiveButton(R.string.unlock,null).setNegativeButton(R.string.cancel) { _,_ -> generation++ }.create()
         dialog=alert; alert.setOnCancelListener { generation++ }; alert.show(); alert.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         alert.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             if(authBusy) return@setOnClickListener
@@ -277,6 +278,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private fun showPrivate() {
         val content=protectedPage(R.string.private_space) ?: return
         content.addView(VeilUi.text(this,getString(R.string.private_unavailable)))
+        if(privateLockConfirmed==false) content.addView(VeilUi.text(this,getString(R.string.private_failed)))
         content.addView(VeilUi.button(this,if(config.hidePrivate) R.string.private_show else R.string.private_hidden) { if(session.current()==VeilProfile.PRIVACY) { config.hidePrivate=!config.hidePrivate; if(save()) showPrivate() } })
         space.profiles().forEach { user ->
             content.addView(VeilUi.text(this,getString(if(space.locked(user)) R.string.locked else R.string.unlocked)))
@@ -289,7 +291,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         })
     }
     private fun catalogSettings() {
-        if(Build.VERSION.SDK_INT>=36) getSystemService(android.content.pm.LauncherApps::class.java).privateSpaceSettingsIntent?.let { startIntentSender(it,null,0,0,0) }
+        if(Build.VERSION.SDK_INT>=36) getSystemService(android.content.pm.LauncherApps::class.java).privateSpaceSettingsIntent?.let { startIntentSender(it,null,0,0,0) } ?: toast(R.string.private_unavailable)
     }
     private fun showApps(profile: VeilProfile) {
         val content=protectedPage(R.string.visibility) ?: return
@@ -300,8 +302,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private fun editApp(app: LaunchableApp, profile: VeilProfile) {
         if(session.current()!=VeilProfile.PRIVACY) { emergency(); return }
         val form=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(24,12,24,12) }
-        val old=config.rules.firstOrNull { it.target==app.identity && profile in it.profiles }
-        val allow=CheckBox(this).apply { setText(R.string.allow); isChecked=profile==VeilProfile.PRIVACY || app.packageName in config.allowlists[profile].orEmpty(); isEnabled=profile!=VeilProfile.PRIVACY }; form.addView(allow)
+        val old=config.rules.firstOrNull { it.target.packageName==app.packageName && it.target.userSerial==app.identity.userSerial && profile in it.profiles }
+        val allow=CheckBox(this).apply { setText(R.string.allow); isChecked=profile==VeilProfile.PRIVACY || ("${app.packageName}|${app.identity.userSerial}" in config.allowlists[profile].orEmpty() || app.packageName in config.allowlists[profile].orEmpty()); isEnabled=profile!=VeilProfile.PRIVACY }; form.addView(allow)
         val presentation=Spinner(this).apply { adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.real,R.string.disguised,R.string.hidden,R.string.decoy).map { getString(it) }); setSelection(old?.presentation?.ordinal ?: 0) }; form.addView(presentation)
         val label=EditText(this).apply { setHint(R.string.label); setText(old?.decoyLabel ?: app.label); filters=arrayOf(android.text.InputFilter.LengthFilter(40)) }; form.addView(label)
         form.addView(VeilUi.text(this,getString(R.string.destination)))
@@ -309,8 +311,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val utility=Spinner(this).apply { adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.calculator,R.string.notes,R.string.clock).map { getString(it) }); setSelection(keys.indexOf(old?.decoyIconKey).coerceAtLeast(0)) }; form.addView(utility)
         val alert=AlertDialog.Builder(this).setTitle(app.label).setView(form).setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.save) { _,_ ->
             if(session.current()==VeilProfile.PRIVACY) {
-                config.allowlists[profile]=config.allowlists[profile].orEmpty().let { if(allow.isChecked) it+app.packageName else it-app.packageName }
-                config.rules=config.rules.filterNot { it.target==app.identity && profile in it.profiles } + DisguiseRule(app.identity,VeilPresentation.entries[presentation.selectedItemPosition],label.text.toString().ifBlank { app.label },keys[utility.selectedItemPosition],setOf(profile))
+                config.allowlists[profile]=config.allowlists[profile].orEmpty().let { if(allow.isChecked) (it-app.packageName)+"${app.packageName}|${app.identity.userSerial}" else it-app.packageName-"${app.packageName}|${app.identity.userSerial}" }
+                config.rules=config.rules.filterNot { it.target.packageName==app.packageName && it.target.userSerial==app.identity.userSerial && profile in it.profiles } + DisguiseRule(app.identity.copy(className=null),VeilPresentation.entries[presentation.selectedItemPosition],label.text.toString().ifBlank { app.label },keys[utility.selectedItemPosition],setOf(profile))
                 save()
             } else emergency()
         }.create()
@@ -323,7 +325,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private fun requestHome() {
         if(Build.VERSION.SDK_INT>=29) {
             val rm=getSystemService(RoleManager::class.java)
-            if(rm.isRoleAvailable(RoleManager.ROLE_HOME) && !rm.isRoleHeld(RoleManager.ROLE_HOME)) startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_HOME),100)
+            if(rm.isRoleAvailable(RoleManager.ROLE_HOME) && !rm.isRoleHeld(RoleManager.ROLE_HOME)) startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_HOME),100) else toast(R.string.default_selected)
         } else startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS))
     }
 }

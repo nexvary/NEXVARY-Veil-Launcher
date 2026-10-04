@@ -26,5 +26,5 @@ class PrivateSpaceBridge(private val context: Context) {
     fun setLocked(user: UserHandle, locked: Boolean): Boolean = try {
         available() && users.requestQuietModeEnabled(locked,user)
     } catch (_: RuntimeException) { false }
-    fun lockAll(): Boolean = profiles().map { setLocked(it,true) }.all { it }
+    fun lockAll(): Boolean = profiles().map { user -> setLocked(user,true); locked(user) }.all { it }
 }

@@ -30,17 +30,18 @@ class VeilConfig {
 
 class VeilStore(context: Context) {
     private val file = AtomicFile(File(context.filesDir, "veil-config.enc"))
+    private fun exists() = file.baseFile.exists() || File(file.baseFile.path+".bak").exists()
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (store.getKey("veil.config.v1", null) as? SecretKey)?.let { return it }
-        check(!file.baseFile.exists()) { "Key unavailable" }
+        check(!exists()) { "Key unavailable" }
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
             init(KeyGenParameterSpec.Builder("veil.config.v1", KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
         }.generateKey()
     }
     @Synchronized fun load(): VeilConfig {
-        if (!file.baseFile.exists()) return VeilConfig()
+        if (!exists()) return VeilConfig()
         val data = file.readFully()
         require(data.size > 28)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -57,7 +58,7 @@ class VeilStore(context: Context) {
                 require(pins.isEmpty() || (pins.map { it.profile }.toSet().containsAll(setOf(VeilProfile.PRIVACY, VeilProfile.DECOY))))
                 val r = json.getJSONArray("rules")
                 rules = (0 until r.length()).map { i -> r.getJSONObject(i).let {
-                    DisguiseRule(AppIdentity(it.getString("package"), it.getString("class"), it.getLong("user")),
+                    DisguiseRule(AppIdentity(it.getString("package"), it.getString("class").ifBlank { null }, it.getLong("user")),
                         VeilPresentation.valueOf(it.getString("presentation")), it.getString("label").ifBlank { null }, it.getString("icon").ifBlank { null },
                         setOf(VeilProfile.valueOf(it.getString("profile"))))
                 } }

@@ -42,6 +42,15 @@ jobs:
           name: NEXVARY-Veil-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Veil-unit-and-lint-reports
+          path: |
+            app/build/test-results/
+            app/build/reports/tests/
+            app/build/reports/lint-results-debug.*
+
   android-15-ui:
     runs-on: ubuntu-latest
     steps:
@@ -64,10 +73,7 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: gradle connectedDebugAndroidTest --stacktrace
-      - name: Collect UI renders
-        if: always()
-        run: adb pull /sdcard/Android/data/com.nexvary.veil/files ui-proof || true
+          script: gradle connectedDebugAndroidTest --stacktrace; VEIL_TEST_STATUS=$?; adb pull /sdcard/Android/data/com.nexvary.veil/files ui-proof || true; exit "$VEIL_TEST_STATUS"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -10,8 +10,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 object VeilUi {
-    fun root(activity: Activity): LinearLayout {
-        activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    fun root(activity: Activity, secure: Boolean = true): LinearLayout {
+        if(secure) activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(17,20,25))
