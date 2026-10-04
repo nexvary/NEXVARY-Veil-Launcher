@@ -140,4 +140,39 @@ class LauncherFlowTest {
         } finally { context.resources.updateConfiguration(original,context.resources.displayMetrics) }
     }
 
+    @Test fun setupWizardPersistsDistinctPinsAndOpensProtectedCenter() {
+        VeilStore(context).save(VeilConfig())
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withText(R.string.setup)).perform(click())
+            onView(withId(R.id.private_pin_input)).perform(scrollTo(),typeText("246810"),closeSoftKeyboard())
+            onView(withId(R.id.private_pin_confirm)).perform(scrollTo(),typeText("246810"),closeSoftKeyboard())
+            onView(withId(R.id.decoy_pin_input)).perform(scrollTo(),typeText("135790"),closeSoftKeyboard())
+            onView(withId(R.id.decoy_pin_confirm)).perform(scrollTo(),typeText("135790"),closeSoftKeyboard())
+            onView(withId(R.id.pin_setup_save)).perform(scrollTo(),click())
+            waitFor(scenario) { val views=arrayListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.profiles),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
+            val saved=VeilStore(context).load()
+            Assert.assertEquals(VeilProfile.PRIVACY,PinProfileResolver(saved.pins).resolve("246810".toCharArray()))
+            Assert.assertEquals(VeilProfile.DECOY,PinProfileResolver(saved.pins).resolve("135790".toCharArray()))
+            scenario.onActivity { capture(it,"control-center-en") }
+            onView(withText(R.string.back)).perform(click())
+            onView(withText(R.string.lock)).perform(click())
+            onView(withText(R.string.control)).check(doesNotExist())
+        }
+    }
+
+    @Test fun failedPinBackoffSurvivesEncryptedReloadAndBlocksCorrectPin() {
+        VeilStore(context).save(VeilStore(context).load().apply { failures=4 })
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.home_clock)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("000000"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { VeilStore(context).load().failures==5 }
+            Assert.assertTrue(VeilStore(context).load().blockedUntil>System.currentTimeMillis())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            onView(withText(R.string.control)).check(doesNotExist())
+            Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
+        }
+    }
+
 }

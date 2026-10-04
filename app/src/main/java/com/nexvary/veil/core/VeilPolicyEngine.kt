@@ -2,7 +2,8 @@ package com.nexvary.veil.core
 
 class VeilPolicyEngine {
     fun decide(identity: AppIdentity, profile: VeilProfile, rules: Collection<DisguiseRule>): VisibilityDecision {
-        val rule = rules.firstOrNull { it.target == identity && profile in it.profiles }
+        val rule = rules.firstOrNull { it.target.packageName == identity.packageName && it.target.userSerial == identity.userSerial &&
+            (it.target.className == null || it.target.className == identity.className) && profile in it.profiles }
             ?: return VisibilityDecision(true, true)
         return when (rule.presentation) {
             VeilPresentation.REAL -> VisibilityDecision(true, true)

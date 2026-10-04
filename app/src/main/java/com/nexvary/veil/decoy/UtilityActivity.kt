@@ -41,12 +41,12 @@ class UtilityActivity : Activity() {
                 val field=EditText(this).apply { id=R.id.calculator_input; inputType=InputType.TYPE_CLASS_TEXT; isSingleLine=true }
                 val result=VeilUi.text(this,"",28f).apply { id=R.id.calculator_result }
                 root.addView(field); root.addView(result)
-                root.addView(VeilUi.button(this,R.string.result) { result.text=try { CalculatorEngine.calculate(field.text.toString()).toString() } catch (_: Exception) { getString(R.string.invalid) } })
+                root.addView(VeilUi.button(this,R.string.result) { result.text=try { CalculatorEngine.calculate(field.text.toString()).toString() } catch (_: Exception) { getString(R.string.calculation_error) } })
                 root.addView(VeilUi.button(this,R.string.clear) { field.text.clear(); result.text="" })
                 val keys=GridLayout(this).apply { columnCount=4 }
                 listOf("7","8","9","/","4","5","6","*","1","2","3","-","0",".","+","=").forEach { key ->
                     keys.addView(Button(this).apply { text=key; layoutParams=GridLayout.LayoutParams().apply { width=0; columnSpec=GridLayout.spec(GridLayout.UNDEFINED,1f) }
-                        setOnClickListener { if(key=="=") result.text=try { CalculatorEngine.calculate(field.text.toString()).toString() } catch (_: Exception) { getString(R.string.invalid) } else field.append(key) } })
+                        setOnClickListener { if(key=="=") result.text=try { CalculatorEngine.calculate(field.text.toString()).toString() } catch (_: Exception) { getString(R.string.calculation_error) } else field.append(key) } })
                 }; root.addView(keys)
             }
         }

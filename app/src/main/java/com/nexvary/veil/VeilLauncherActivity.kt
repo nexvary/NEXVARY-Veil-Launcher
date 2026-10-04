@@ -36,7 +36,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private var dialog: AlertDialog?=null
     private val expiry=object: Runnable {
         override fun run() {
-            if(session.current()!=renderedProfile) { dialog?.dismiss(); showLauncher() }
+            if(session.current()!=renderedProfile) emergency()
             handler.postDelayed(this,1000)
         }
     }
@@ -58,7 +58,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     }
     override fun onResume() {
         super.onResume()
-        if(session.current()==VeilProfile.DECOY && page!="home" && config.pins.isNotEmpty()) showLauncher()
+        if(session.current()==VeilProfile.DECOY && renderedProfile!=VeilProfile.DECOY) emergency()
+        else if(session.current()==VeilProfile.DECOY && page!="home" && config.pins.isNotEmpty()) showLauncher()
         else if(page=="home") showLauncher()
         handler.removeCallbacks(expiry); handler.postDelayed(expiry,1000)
     }
@@ -220,8 +221,9 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val form=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
         root.addView(ScrollView(this).apply { addView(form) },LinearLayout.LayoutParams(-1,0,1f))
         form.addView(VeilUi.text(this,getString(R.string.setup_help)))
-        val fields=listOf(R.string.privacy_pin,R.string.confirm,R.string.decoy_pin,R.string.confirm,R.string.normal_pin,R.string.confirm).map { pinField(it).also(form::addView) }
-        val saveButton=VeilUi.button(this,R.string.save) {}
+        val fieldIds=listOf(R.id.private_pin_input,R.id.private_pin_confirm,R.id.decoy_pin_input,R.id.decoy_pin_confirm,R.id.limited_pin_input,R.id.limited_pin_confirm)
+        val fields=listOf(R.string.privacy_pin,R.string.confirm,R.string.decoy_pin,R.string.confirm,R.string.normal_pin,R.string.confirm).mapIndexed { i,hint -> pinField(hint).apply { id=fieldIds[i] }.also(form::addView) }
+        val saveButton=VeilUi.button(this,R.string.save) {}.apply { id=R.id.pin_setup_save }
         form.addView(saveButton)
         saveButton.setOnClickListener {
             if(authBusy) return@setOnClickListener

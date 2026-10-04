@@ -5,4 +5,11 @@
     <item name="note_input" type="id" />
     <item name="calculator_input" type="id" />
     <item name="calculator_result" type="id" />
+    <item name="private_pin_input" type="id" />
+    <item name="private_pin_confirm" type="id" />
+    <item name="decoy_pin_input" type="id" />
+    <item name="decoy_pin_confirm" type="id" />
+    <item name="limited_pin_input" type="id" />
+    <item name="limited_pin_confirm" type="id" />
+    <item name="pin_setup_save" type="id" />
 </resources>
