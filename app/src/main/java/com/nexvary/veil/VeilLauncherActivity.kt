@@ -23,7 +23,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private val catalog by lazy { AppCatalog(this) }
     private val space by lazy { PrivateSpaceBridge(this) }
     private val store by lazy { VeilStore(this) }
-    private val session = SessionGate { SystemClock.elapsedRealtime() }
+    private val session = VeilRuntime.session
     private var config = VeilConfig()
     private var storageFailed=false
     private var page="home"
@@ -44,10 +44,11 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     }
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        session.lock()
         onBackPressedDispatcher.addCallback(this, object: androidx.activity.OnBackPressedCallback(true) { override fun handleOnBackPressed() { showLauncher() } })
         try { config=store.load() } catch (_: Exception) { storageFailed=true }
         val filter=IntentFilter().apply {
-            addAction(Intent.ACTION_PROFILE_AVAILABLE); addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
+            if(Build.VERSION.SDK_INT>=35) { addAction(Intent.ACTION_PROFILE_AVAILABLE); addAction(Intent.ACTION_PROFILE_UNAVAILABLE) }
             addAction(Intent.ACTION_SCREEN_OFF)
         }
         if(Build.VERSION.SDK_INT>=33) registerReceiver(profileReceiver,filter,Context.RECEIVER_NOT_EXPORTED) else registerReceiver(profileReceiver,filter)
@@ -70,7 +71,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); showLauncher() }
     private fun toast(id: Int) { Toast.makeText(this,id,Toast.LENGTH_LONG).show() }
     private fun save(): Boolean = try { store.save(config); true } catch (_: Exception) { storageFailed=true; emergency(); toast(R.string.storage_error); false }
-    private fun utility(key: String) { startActivity(Intent(this,UtilityActivity::class.java).putExtra("utility",key)) }
+    private fun utility(key: String) { startActivity(Intent(this,UtilityActivity::class.java).putExtra("utility",key).putExtra("profile",session.current().name)) }
     private fun settings() {
         if(session.current()==VeilProfile.PRIVACY && !storageFailed) showControl()
         else startActivity(Intent(this,DecoySettingsActivity::class.java))
@@ -88,17 +89,17 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         renderedProfile=profile
         val root=VeilUi.root(this)
         val clock=TextClock(this).apply {
-            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=38f; gravity=Gravity.CENTER; id=1001
+            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=38f; gravity=Gravity.CENTER; id=R.id.home_clock
             setOnLongClickListener { if(!storageFailed) { if(config.pins.isEmpty()) showSetup() else showPin() }; true }
         }
         root.addView(clock)
-        val search=EditText(this).apply { id=1002; setHint(R.string.search); isSingleLine=true
+        val search=EditText(this).apply { id=R.id.app_search; setHint(R.string.search); isSingleLine=true
             setOnLongClickListener { if(config.emergencyEnabled) emergency(); true } }
         root.addView(search)
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
         if(config.pins.isEmpty() && !storageFailed) root.addView(VeilUi.button(this,R.string.setup) { showSetup() })
         val grid=GridView(this).apply {
-            id=1003; columnWidth=VeilUi.dp(this@VeilLauncherActivity,88); numColumns=GridView.AUTO_FIT
+            id=R.id.app_grid; columnWidth=VeilUi.dp(this@VeilLauncherActivity,88); numColumns=GridView.AUTO_FIT
             stretchMode=GridView.STRETCH_COLUMN_WIDTH; verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
         }
         root.addView(grid,LinearLayout.LayoutParams(-1,0,1f))

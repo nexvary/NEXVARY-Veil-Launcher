@@ -1,0 +1,8 @@
+<resources>
+    <item name="home_clock" type="id" />
+    <item name="app_search" type="id" />
+    <item name="app_grid" type="id" />
+    <item name="note_input" type="id" />
+    <item name="calculator_input" type="id" />
+    <item name="calculator_result" type="id" />
+</resources>

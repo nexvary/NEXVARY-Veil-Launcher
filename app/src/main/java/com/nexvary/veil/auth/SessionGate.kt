@@ -16,3 +16,7 @@ class SessionGate(private val clock: () -> Long) {
     }
     fun lock() { active = VeilProfile.DECOY; deadline = 0L }
 }
+
+object VeilRuntime {
+    val session = SessionGate { android.os.SystemClock.elapsedRealtime() }
+}

@@ -12,6 +12,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    bundle { language { enableSplit = false } }
+
     defaultConfig {
         applicationId = "com.nexvary.veil"
         minSdk = 28

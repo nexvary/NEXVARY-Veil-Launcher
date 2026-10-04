@@ -5,7 +5,7 @@ import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.espresso.Espresso.*
+import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.*
 import androidx.test.espresso.assertion.ViewAssertions.*
 import androidx.test.espresso.matcher.ViewMatchers.*
@@ -20,15 +20,16 @@ import org.junit.runner.RunWith
 class LauncherFlowTest {
     private val context: Context get()=InstrumentationRegistry.getInstrumentation().targetContext
     @Before fun configure() {
+        com.nexvary.veil.auth.VeilRuntime.session.lock()
         VeilStore(context).save(VeilConfig().apply { pins=listOf(PinProfileResolver.bind("246810".toCharArray(),VeilProfile.PRIVACY),PinProfileResolver.bind("135790".toCharArray(),VeilProfile.DECOY)) })
     }
     @Test fun startsConcealedSearchAndRecreationStayConcealed() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
-            onView(withId(1003)).check(matches(isDisplayed()))
-            onView(withId(1002)).perform(typeText("zzzzzz"),closeSoftKeyboard())
+            onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
+            onView(withId(R.id.app_search)).perform(typeText("zzzzzz"),closeSoftKeyboard())
             onView(withText(R.string.control)).check(doesNotExist())
             scenario.recreate()
-            onView(withId(1003)).check(matches(isDisplayed()))
+            onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
             onView(withText(R.string.control)).check(doesNotExist())
         }
     }
@@ -38,7 +39,7 @@ class LauncherFlowTest {
             onView(withText(R.string.brightness)).check(matches(isDisplayed()))
             onView(withText(R.string.control)).check(doesNotExist())
             onView(withText(R.string.back)).perform(click())
-            onView(withId(1003)).check(matches(isDisplayed()))
+            onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
         }
     }
     @Test fun encryptedConfigRejectsTampering() {
@@ -50,9 +51,9 @@ class LauncherFlowTest {
     }
     @Test fun calculatorWorksAndBackClosesUtility() {
         ActivityScenario.launch<UtilityActivity>(Intent(context,UtilityActivity::class.java).putExtra("utility","calculator")).use {
-            onView(withId(2002)).perform(typeText("2+3*4"),closeSoftKeyboard())
+            onView(withId(R.id.calculator_input)).perform(typeText("2+3*4"),closeSoftKeyboard())
             onView(withText(R.string.result)).perform(click())
-            onView(withId(2003)).check(matches(withText("14.0")))
+            onView(withId(R.id.calculator_result)).check(matches(withText("14.0")))
             onView(withText(R.string.back)).perform(click())
         }
     }
@@ -67,26 +68,26 @@ class LauncherFlowTest {
     }
     @Test fun privacyAndDuressPinsSwitchActualLauncherAndRecreateRelocks() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
-            onView(withId(1001)).perform(longClick())
+            onView(withId(R.id.home_clock)).perform(longClick())
             onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
             onView(withText(R.string.unlock)).perform(click())
-            waitFor(scenario) { val views=mutableListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
+            waitFor(scenario) { val views=arrayListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
             onView(withText(R.string.control)).check(matches(isDisplayed()))
             onView(withText(R.string.control)).perform(click())
             onView(withText(R.string.profiles)).check(matches(isDisplayed()))
             onView(withText(R.string.back)).perform(click())
-            onView(withId(1001)).perform(longClick())
+            onView(withId(R.id.home_clock)).perform(longClick())
             onView(withHint(R.string.pin)).perform(typeText("135790"),closeSoftKeyboard())
             onView(withText(R.string.unlock)).perform(click())
-            waitFor(scenario) { val views=mutableListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isEmpty() && it.findViewById<android.view.View>(1003)!=null }
+            waitFor(scenario) { val views=arrayListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isEmpty() && it.findViewById<android.view.View>(R.id.app_grid)!=null }
             onView(withText(R.string.control)).check(doesNotExist())
             onView(withText(R.string.settings)).perform(click())
             onView(withText(R.string.brightness)).check(matches(isDisplayed()))
             onView(withText(R.string.back)).perform(click())
-            onView(withId(1001)).perform(longClick())
+            onView(withId(R.id.home_clock)).perform(longClick())
             onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
             onView(withText(R.string.unlock)).perform(click())
-            waitFor(scenario) { val views=mutableListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
+            waitFor(scenario) { val views=arrayListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
             scenario.recreate()
             onView(withText(R.string.control)).check(doesNotExist())
         }
@@ -118,7 +119,7 @@ class LauncherFlowTest {
         VeilStore(context).save(config)
         Assert.assertTrue(catalog.load(config.policy(VeilProfile.DECOY)).none { it.identity==app.identity })
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use {
-            onView(withId(1002)).perform(typeText("Daily Notes"),closeSoftKeyboard())
+            onView(withId(R.id.app_search)).perform(typeText("Daily Notes"),closeSoftKeyboard())
             onView(withText("Daily Notes")).check(doesNotExist())
         }
     }
@@ -128,13 +129,13 @@ class LauncherFlowTest {
             context.resources.updateConfiguration(android.content.res.Configuration(original).apply { setLocale(java.util.Locale("ar")) },context.resources.displayMetrics)
             ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
                 scenario.onActivity { activity ->
-                    val grid=activity.findViewById<android.view.View>(1003)
+                    val grid=activity.findViewById<android.view.View>(R.id.app_grid)
                     Assert.assertEquals(android.view.View.LAYOUT_DIRECTION_RTL,grid.layoutDirection)
                     capture(activity,"decoy-grid-ar")
                 }
                 onView(withText(R.string.settings)).perform(click())
                 onView(withText(R.string.back)).perform(click())
-                onView(withId(1003)).check(matches(isDisplayed()))
+                onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
             }
         } finally { context.resources.updateConfiguration(original,context.resources.displayMetrics) }
     }
