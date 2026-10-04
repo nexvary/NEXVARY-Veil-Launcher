@@ -13,8 +13,9 @@ data class ProfilePolicy(
     val allowedPackages: Set<String> = emptySet(),
     val rules: List<DisguiseRule> = emptyList(),
     val settingsDecoy: Boolean = profile == VeilProfile.DECOY,
-    val lockPrivateSpaceOnEntry: Boolean = profile == VeilProfile.DECOY
+    val lockPrivateSpaceOnEntry: Boolean = profile == VeilProfile.DECOY,
+    val enforceAllowlist: Boolean = false
 ) {
     fun allows(identity: AppIdentity): Boolean =
-        allowedPackages.isEmpty() || identity.packageName in allowedPackages
+        (!enforceAllowlist && allowedPackages.isEmpty()) || identity.packageName in allowedPackages
 }
