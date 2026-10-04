@@ -56,4 +56,40 @@ class LauncherFlowTest {
             onView(withText(R.string.back)).perform(click())
         }
     }
+    private fun waitFor(scenario: ActivityScenario<VeilLauncherActivity>, predicate: (VeilLauncherActivity) -> Boolean) {
+        val end=android.os.SystemClock.elapsedRealtime()+30_000
+        var matched=false
+        while(!matched && android.os.SystemClock.elapsedRealtime()<end) {
+            scenario.onActivity { matched=predicate(it) }
+            if(!matched) Thread.sleep(100)
+        }
+        Assert.assertTrue("Profile transition did not complete",matched)
+    }
+    @Test fun privacyAndDuressPinsSwitchActualLauncherAndRecreateRelocks() {
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(1001)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { val views=mutableListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
+            onView(withText(R.string.control)).check(matches(isDisplayed()))
+            onView(withText(R.string.control)).perform(click())
+            onView(withText(R.string.profiles)).check(matches(isDisplayed()))
+            onView(withText(R.string.back)).perform(click())
+            onView(withId(1001)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("135790"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { val views=mutableListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isEmpty() && it.findViewById<android.view.View>(1003)!=null }
+            onView(withText(R.string.control)).check(doesNotExist())
+            onView(withText(R.string.settings)).perform(click())
+            onView(withText(R.string.brightness)).check(matches(isDisplayed()))
+            onView(withText(R.string.back)).perform(click())
+            onView(withId(1001)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { val views=mutableListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
+            scenario.recreate()
+            onView(withText(R.string.control)).check(doesNotExist())
+        }
+    }
+
 }

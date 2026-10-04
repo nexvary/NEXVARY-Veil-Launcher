@@ -17,7 +17,7 @@ class AppCatalog(private val context: Context, private val policy: VeilPolicyEng
     private val launcher = context.getSystemService(LauncherApps::class.java)
     private val users = context.getSystemService(UserManager::class.java)
     private val privateSpace = PrivateSpaceBridge(context)
-    fun load(profile: VeilProfile, rules: Collection<DisguiseRule>): List<LaunchableApp> = load(ProfilePolicy(profile,rules=rules))
+    fun load(profile: VeilProfile, rules: Collection<DisguiseRule>): List<LaunchableApp> = load(ProfilePolicy(profile,rules=rules.toList()))
     fun load(profile: ProfilePolicy, includePrivate: Boolean = false, unfiltered: Boolean = false): List<LaunchableApp> {
         val result = mutableListOf<LaunchableApp>()
         val profiles = try { launcher.profiles } catch (_: RuntimeException) { listOf(Process.myUserHandle()) }
