@@ -9,6 +9,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Veil">
         <activity
+            android:name=".decoy.DecoySettingsActivity"
+            android:exported="false" />
+        <activity
             android:name=".VeilLauncherActivity"
             android:exported="true"
             android:launchMode="singleTask">
