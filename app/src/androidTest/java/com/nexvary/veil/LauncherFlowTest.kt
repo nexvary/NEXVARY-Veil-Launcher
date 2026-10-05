@@ -166,20 +166,23 @@ class LauncherFlowTest {
         }
     }
     @Test fun arabicUsesRtlAndRendersGrid() {
-        val original=android.content.res.Configuration(context.resources.configuration)
+        val localeManager=context.getSystemService(android.app.LocaleManager::class.java)
+        val original=localeManager.applicationLocales
         try {
-            context.resources.updateConfiguration(android.content.res.Configuration(original).apply { setLocale(java.util.Locale("ar")) },context.resources.displayMetrics)
+            localeManager.applicationLocales=android.os.LocaleList.forLanguageTags("ar")
             ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
                 scenario.onActivity { activity ->
                     val grid=activity.findViewById<android.view.View>(R.id.app_grid)
                     Assert.assertEquals(android.view.View.LAYOUT_DIRECTION_RTL,grid.layoutDirection)
+                    Assert.assertEquals("الإعدادات",activity.getString(R.string.settings))
+                    Assert.assertEquals("ابحث عن تطبيق",activity.findViewById<android.widget.EditText>(R.id.app_search).hint.toString())
                     capture(activity,"decoy-grid-ar")
                 }
                 onView(withText(R.string.settings)).perform(click())
                 onView(withText(R.string.back)).perform(click())
                 onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
             }
-        } finally { context.resources.updateConfiguration(original,context.resources.displayMetrics) }
+        } finally { localeManager.applicationLocales=original }
     }
 
     @Test fun setupWizardPersistsDistinctPinsAndOpensProtectedCenter() {
