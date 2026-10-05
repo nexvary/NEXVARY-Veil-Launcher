@@ -141,7 +141,7 @@ class LauncherFlowTest {
         val pipes=InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommandRw("sh -c 'cat > $destination'")
         android.os.ParcelFileDescriptor.AutoCloseOutputStream(pipes[1]).use { output -> file.inputStream().use { it.copyTo(output) } }
         android.os.ParcelFileDescriptor.AutoCloseInputStream(pipes[0]).use { it.readBytes() }
-        assertTrue("Screenshot must survive test package cleanup",shell("wc -c $destination").trim().startsWith(file.length().toString()))
+        Assert.assertTrue("Screenshot must survive test package cleanup",shell("wc -c $destination").trim().startsWith(file.length().toString()))
     }
     @Test fun decoyMappingRoutesToNotesAndHiddenIdentityIsNotSearchable() {
         val catalog=com.nexvary.veil.launcher.AppCatalog(context)
