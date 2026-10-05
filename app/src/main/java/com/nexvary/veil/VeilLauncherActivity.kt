@@ -103,14 +103,15 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             root.addView(LinearLayout(this).apply {
                 gravity=Gravity.CENTER_VERTICAL
                 addView(clock,LinearLayout.LayoutParams(-2,-2))
-                addView(search,LinearLayout.LayoutParams(0,-2,1f))
+                addView(search,LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,12) })
             })
         } else { root.addView(clock); root.addView(search) }
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
         if(config.pins.isEmpty() && !storageFailed) root.addView(VeilUi.button(this,R.string.setup) { showSetup() })
         val grid=GridView(this).apply {
-            id=R.id.app_grid; columnWidth=VeilUi.dp(this@VeilLauncherActivity,88); numColumns=GridView.AUTO_FIT
+            id=R.id.app_grid; columnWidth=tileColumnWidth(); numColumns=GridView.AUTO_FIT
             stretchMode=GridView.STRETCH_COLUMN_WIDTH; verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
+            horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
         }
         root.addView(grid,LinearLayout.LayoutParams(-1,0,1f))
         // Filter one policy-checked snapshot while typing. Resume/profile broadcasts rebuild it.
@@ -156,7 +157,10 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                         showLauncher()
                     })
                 }
-                val privateGrid=GridView(this).apply { columnWidth=VeilUi.dp(this@VeilLauncherActivity,88); numColumns=GridView.AUTO_FIT; stretchMode=GridView.STRETCH_COLUMN_WIDTH }
+                val privateGrid=GridView(this).apply {
+                    columnWidth=tileColumnWidth(); numColumns=GridView.AUTO_FIT; stretchMode=GridView.STRETCH_COLUMN_WIDTH
+                    horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,8); verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
+                }
                 val items=catalog.load(config.policy(profile),includePrivate=true).filter { it.privateSpace }.map { Tile(it.label,it) }
                 privateGrid.adapter=TileAdapter(items)
                 privateGrid.setOnItemClickListener { _,_,position,_ ->
@@ -166,7 +170,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                     if(app!=null && app.decision.launchRealTarget) catalog.launch(app)
                     else if(app!=null) utility(app.decision.iconOverrideKey ?: "calculator")
                 }
-                root.addView(privateGrid,LinearLayout.LayoutParams(-1,VeilUi.dp(this,144)))
+                if(items.isNotEmpty()) root.addView(privateGrid,LinearLayout.LayoutParams(-1,0,1f))
             }
         }
         if(profile==VeilProfile.PRIVACY) {
@@ -176,6 +180,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         }
     }
     private data class Tile(val label: String,val app: LaunchableApp?=null,val utility: String?=null)
+    private fun tileColumnWidth() = VeilUi.dp(this,(88*resources.configuration.fontScale.coerceAtLeast(1f)).toInt())
     private inner class TileAdapter(private val items: List<Tile>): BaseAdapter() {
         override fun getCount()=items.size
         override fun getItem(position: Int)=items[position]
@@ -184,14 +189,17 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             val tile=items[position]
             return LinearLayout(this@VeilLauncherActivity).apply {
                 orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER; background=VeilUi.card()
-                setPadding(6,14,6,10); minimumHeight=VeilUi.dp(this@VeilLauncherActivity,100)
+                setPadding(VeilUi.dp(this@VeilLauncherActivity,8),VeilUi.dp(this@VeilLauncherActivity,12),VeilUi.dp(this@VeilLauncherActivity,8),VeilUi.dp(this@VeilLauncherActivity,8)); minimumHeight=VeilUi.dp(this@VeilLauncherActivity,112)
                 addView(ImageView(this@VeilLauncherActivity).apply {
                     if(tile.app?.icon!=null) setImageDrawable(tile.app.icon)
                     else setImageResource(when(tile.utility ?: tile.app?.decision?.iconOverrideKey) {
                         "notes" -> R.drawable.ic_notes; "clock" -> R.drawable.ic_clock; "settings" -> R.drawable.ic_settings; else -> R.drawable.ic_calculator
                     })
                 },LinearLayout.LayoutParams(VeilUi.dp(this@VeilLauncherActivity,38),VeilUi.dp(this@VeilLauncherActivity,38)))
-                addView(VeilUi.text(this@VeilLauncherActivity,tile.label,13f).apply { gravity=Gravity.CENTER; maxLines=2; ellipsize=android.text.TextUtils.TruncateAt.END })
+                addView(VeilUi.text(this@VeilLauncherActivity,tile.label,13f).apply {
+                    gravity=Gravity.CENTER; minLines=2; maxLines=2; ellipsize=android.text.TextUtils.TruncateAt.END
+                    setPadding(0,VeilUi.dp(this@VeilLauncherActivity,8),0,0)
+                })
             }
         }
     }

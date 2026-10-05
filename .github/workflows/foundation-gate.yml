@@ -35,7 +35,7 @@ jobs:
         run: gradle testDebugUnitTest --stacktrace
       - name: Android lint
         run: gradle lintDebug --stacktrace || { cat app/build/reports/lint-results-debug.txt; exit 1; }
-      - name: Build debug APK
+      - name: Build debug and unsigned release APKs
         run: gradle assembleDebug assembleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
