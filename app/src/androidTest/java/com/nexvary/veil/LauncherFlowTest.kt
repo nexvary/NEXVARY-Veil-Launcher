@@ -106,6 +106,7 @@ class LauncherFlowTest {
             onView(withText(R.string.unlock)).perform(click())
             waitFor(scenario) { val views=arrayListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.control),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
             onView(withText(R.string.control)).check(matches(isDisplayed()))
+            scenario.onActivity { capture(it,"private-grid-en") }
             onView(withText(R.string.control)).perform(click())
             onView(withText(R.string.profiles)).check(matches(isDisplayed()))
             onView(withText(R.string.back)).perform(click())

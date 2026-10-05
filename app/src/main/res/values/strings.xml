@@ -116,4 +116,5 @@
     <string name="pause_timer">Pause</string>
     <string name="reset_timer">Reset</string>
     <string name="delete_digit">Delete</string>
+    <string name="excluded">Not in this home</string>
 </resources>

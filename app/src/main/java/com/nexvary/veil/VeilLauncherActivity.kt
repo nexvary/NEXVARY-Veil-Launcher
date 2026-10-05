@@ -116,6 +116,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             root.addView(VeilUi.text(this,getString(R.string.apps),14f).apply { setTextColor(VeilUi.muted) })
         }
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
+        val empty=VeilUi.text(this,getString(R.string.no_results),15f).apply { gravity=Gravity.CENTER;visibility=View.GONE }
+        root.addView(empty)
         val grid=GridView(this).apply {
             id=R.id.app_grid; columnWidth=tileColumnWidth(); numColumns=GridView.AUTO_FIT
             stretchMode=GridView.STRETCH_COLUMN_WIDTH; verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
@@ -136,6 +138,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                 if(label.contains(query,true) && entries.none { it.label.equals(label,true) }) entries+=Tile(label,utility=key)
             }
             grid.adapter=TileAdapter(entries)
+            empty.visibility=if(entries.isEmpty()) View.VISIBLE else View.GONE
             grid.setOnItemClickListener { _,_,position,_ ->
                 val tile=entries[position]
                 if(tile.app!=null) {
@@ -317,7 +320,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                     fields.forEach { it.text.clear() };authBusy=true;saveButton.isEnabled=false
                     val token=generation
                     worker.execute {
-                        val bindings=try { pairs.mapIndexedNotNull { i,pair -> if(pair[0].isEmpty()) null else PinProfileResolver.bind(pair[0],listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) } catch (_: Exception) { null } finally { values.forEach { it.fill('\u0000') } }
+                        val bindings=try { pairs.mapIndexedNotNull { i,pair -> if(pair[0].isEmpty()) null else PinProfileResolver.bind(pair[0],listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) } } catch (_: Exception) { null } finally { values.forEach { it.fill('\u0000') } }
                         runOnUiThread {
                             authBusy=false
                             if(isDestroyed || token!=generation || page!="setup") return@runOnUiThread
@@ -398,7 +401,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                 val labels=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
                 labels.addView(VeilUi.text(this,app.label,16f))
                 val rule=config.rules.firstOrNull { it.target.packageName==app.packageName && it.target.userSerial==app.identity.userSerial && profile in it.profiles }
-                labels.addView(VeilUi.text(this,getString(when(rule?.presentation) { VeilPresentation.HIDDEN -> R.string.hidden;VeilPresentation.DISGUISED -> R.string.disguised;VeilPresentation.DECOY -> R.string.decoy;else -> R.string.real }),12f).apply { setTextColor(VeilUi.muted) })
+                val included=profile==VeilProfile.PRIVACY || app.packageName in config.allowlists[profile].orEmpty() || "${app.packageName}|${app.identity.userSerial}" in config.allowlists[profile].orEmpty()
+                labels.addView(VeilUi.text(this,getString(if(!included) R.string.excluded else when(rule?.presentation) { VeilPresentation.HIDDEN -> R.string.hidden;VeilPresentation.DISGUISED -> R.string.disguised;VeilPresentation.DECOY -> R.string.decoy;else -> R.string.real }),12f).apply { setTextColor(VeilUi.muted) })
                 row.addView(labels,LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,12) })
                 row.isClickable=true;row.isFocusable=true;row.setOnClickListener { editApp(app,profile) };list.addView(row)
             }

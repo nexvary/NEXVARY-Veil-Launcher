@@ -3,7 +3,7 @@
 Privacy-first Android launcher focused on **application identity virtualization**: apps can be represented inside the launcher with decoy names/icons, hidden from ordinary launcher surfaces, and revealed through user-defined authenticated actions.
 
 ## Status
-0.2.0-alpha02 development milestone. This is not a release candidate; see the security review and the latest CI for verified results and remaining device/OEM checks.
+0.2.0-alpha03 development milestone. This is not a release candidate; see the security review and the latest CI for verified results and remaining device/OEM checks.
 
 ## Implemented paths
 - Encrypted multi-PIN setup and PRIVACY / DECOY / optional NORMAL routing.
@@ -16,14 +16,16 @@ Privacy-first Android launcher focused on **application identity virtualization*
 - Unit tests, Android 14/15/16 instrumentation matrix, lint, debug artifacts and source security/leakage documentation.
 
 ## First use
-1. Open Veil and choose Set up profiles.
-2. Set distinct 6–12-digit Private and Alternative PINs, with confirmations. Limited PIN is optional.
+1. Open Veil, read the introduction and choose Set up profiles.
+2. Follow the three steps for distinct 6–12-digit Private and Alternative PINs, with confirmations, then review how to open and lock each environment. Limited PIN is optional.
 3. In Control Center choose Use as default Home.
 4. Configure each profile's app allowlist and presentation. Empty DECOY/NORMAL lists show only local utilities.
 5. Long press the home clock to enter a PIN. Long press Search for Emergency Veil (can be disabled in Control Center).
 6. Private Space needs Android 15+, the default Home role, an existing private profile and OS authorization. Android 16 adds its platform settings link.
 
 No automatic destructive wiping. There is no PIN recovery bypass: remember both codes. Android system surfaces remain accessible in STANDARD. See [threat model](docs/THREAT_MODEL.md), [leakage matrix](docs/THREAT_MATRIX.md) and [security review](docs/SECURITY_REVIEW.md).
+
+See the [interaction guide](docs/USABILITY.md) for the new onboarding, app-management and utility flows.
 
 ## Development checks
 With Android SDK 36, JDK 17 and Gradle 8.13:
