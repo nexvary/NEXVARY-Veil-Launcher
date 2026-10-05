@@ -110,7 +110,10 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             val apps=if(storageFailed) emptyList() else catalog.load(config.policy(current))
             val entries=apps.filter { it.label.contains(query,true) }.map { Tile(it.label,it) }.toMutableList()
             listOf(R.string.calculator to "calculator",R.string.notes to "notes",R.string.clock to "clock",R.string.settings to "settings").forEach { (id,key) ->
-                if(getString(id).contains(query,true)) entries+=Tile(getString(id),utility=key)
+                val label=getString(id)
+                // A configured app/decoy with this label already provides the tile.
+                // Avoid duplicate Settings/Calculator/Clock entries in a convincing profile.
+                if(label.contains(query,true) && entries.none { it.label.equals(label,true) }) entries+=Tile(label,utility=key)
             }
             grid.adapter=TileAdapter(entries)
             grid.setOnItemClickListener { _,_,position,_ ->
