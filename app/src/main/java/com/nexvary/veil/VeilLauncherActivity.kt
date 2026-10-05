@@ -417,7 +417,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val form=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; val padding=VeilUi.dp(this@VeilLauncherActivity,16);setPadding(padding,padding,padding,padding) }
         val old=config.rules.firstOrNull { it.target.packageName==app.packageName && it.target.userSerial==app.identity.userSerial && profile in it.profiles }
         val allow=CheckBox(this).apply { setText(R.string.allow); isChecked=profile==VeilProfile.PRIVACY || ("${app.packageName}|${app.identity.userSerial}" in config.allowlists[profile].orEmpty() || app.packageName in config.allowlists[profile].orEmpty()); isEnabled=profile!=VeilProfile.PRIVACY }; form.addView(allow)
-        val presentation=Spinner(this).apply { id=R.id.presentation_picker;adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.real,R.string.disguised,R.string.hidden,R.string.decoy).map { getString(it) }); setSelection(old?.presentation?.ordinal ?: 0) }; form.addView(presentation)
+        val presentation=Spinner(this,Spinner.MODE_DROPDOWN).apply { id=R.id.presentation_picker;adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.real,R.string.disguised,R.string.hidden,R.string.decoy).map { getString(it) }); setSelection(old?.presentation?.ordinal ?: 0) }; form.addView(presentation)
         val explanation=VeilUi.text(this,"",14f).apply { setTextColor(VeilUi.muted) };form.addView(explanation)
         presentation.onItemSelectedListener=object: AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?,view: View?,position: Int,id: Long) { explanation.setText(listOf(R.string.real_help,R.string.disguised_help,R.string.hidden_help,R.string.decoy_help)[position]) }
@@ -426,7 +426,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val label=EditText(this).apply { setHint(R.string.label); setText(old?.decoyLabel ?: app.label); filters=arrayOf(android.text.InputFilter.LengthFilter(40)) }; form.addView(label)
         form.addView(VeilUi.text(this,getString(R.string.destination)))
         val keys=listOf("calculator","notes","clock")
-        val utility=Spinner(this).apply { adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.calculator,R.string.notes,R.string.clock).map { getString(it) }); setSelection(keys.indexOf(old?.decoyIconKey).coerceAtLeast(0)) }; form.addView(utility)
+        val utility=Spinner(this,Spinner.MODE_DROPDOWN).apply { adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.calculator,R.string.notes,R.string.clock).map { getString(it) }); setSelection(keys.indexOf(old?.decoyIconKey).coerceAtLeast(0)) }; form.addView(utility)
         val alert=AlertDialog.Builder(this).setTitle(app.label).setView(ScrollView(this).apply { addView(form) }).setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.save) { _,_ ->
             if(session.current()==VeilProfile.PRIVACY) {
                 config.allowlists[profile]=config.allowlists[profile].orEmpty().let { if(allow.isChecked) (it-app.packageName)+"${app.packageName}|${app.identity.userSerial}" else it-app.packageName-"${app.packageName}|${app.identity.userSerial}" }

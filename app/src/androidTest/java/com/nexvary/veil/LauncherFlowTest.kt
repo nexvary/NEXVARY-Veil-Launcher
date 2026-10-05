@@ -312,8 +312,8 @@ class LauncherFlowTest {
             onView(withId(R.id.management_search)).perform(replaceText(target.label),closeSoftKeyboard())
             scenario.onActivity { capture(it,"app-management-en") }
             onView(org.hamcrest.Matchers.allOf(withText(target.label),org.hamcrest.Matchers.not(withId(R.id.management_search)))).perform(click())
-            onView(withId(R.id.presentation_picker)).perform(click())
-            androidx.test.espresso.Espresso.onData(org.hamcrest.Matchers.equalTo(context.getString(R.string.disguised))).perform(click())
+            onView(withId(R.id.presentation_picker)).inRoot(androidx.test.espresso.matcher.RootMatchers.isDialog()).perform(click())
+            androidx.test.espresso.Espresso.onData(org.hamcrest.Matchers.equalTo(context.getString(R.string.disguised))).inRoot(androidx.test.espresso.matcher.RootMatchers.isPlatformPopup()).perform(click())
             onView(withHint(R.string.label)).perform(replaceText("Desk Utility"),closeSoftKeyboard())
             onView(withHint(R.string.label)).perform(object: androidx.test.espresso.ViewAction {
                 override fun getConstraints()=isDisplayed()
