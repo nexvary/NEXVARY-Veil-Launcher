@@ -71,7 +71,11 @@ def hold(name, prepare=False):
     log = (OUT / (name + "-instrumentation.txt")).open("w")
     process = subprocess.Popen(instrument("holdAuthenticatedSession", prepare), stdout=log, stderr=log)
     try:
-        wait_for(lambda: adb("shell", "ls", "/data/local/tmp/veil-lifecycle-ready", check=False).endswith("veil-lifecycle-ready"))
+        def ready():
+            if process.poll() is not None:
+                raise AssertionError("Authenticated fixture terminated: " + (OUT / (name + "-instrumentation.txt")).read_text()[-2000:])
+            return adb("shell", "ls", "/data/local/tmp/veil-lifecycle-ready", check=False).endswith("veil-lifecycle-ready")
+        wait_for(ready)
         # The running fixture owns UiAutomation until force-stop/reboot. Read its
         # snapshot instead of launching a second automation client that kills it.
         xml = adb("shell", "cat", "/data/local/tmp/veil-lifecycle-authenticated.xml")
