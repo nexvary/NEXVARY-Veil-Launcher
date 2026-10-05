@@ -19,7 +19,14 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class LauncherFlowTest {
     private val context: Context get()=InstrumentationRegistry.getInstrumentation().targetContext
+    private fun shell(command: String): String = android.os.ParcelFileDescriptor.AutoCloseInputStream(
+        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
+    ).bufferedReader().use { it.readText() }
     @Before fun configure() {
+        // Only the disposable test emulator is controlled here; app code never dismisses Android's lock screen.
+        shell("input keyevent KEYCODE_WAKEUP")
+        shell("wm dismiss-keyguard")
+
         com.nexvary.veil.auth.VeilRuntime.session.lock()
         VeilStore(context).save(VeilConfig().apply { pins=listOf(PinProfileResolver.bind("246810".toCharArray(),VeilProfile.PRIVACY),PinProfileResolver.bind("135790".toCharArray(),VeilProfile.DECOY)) })
     }
