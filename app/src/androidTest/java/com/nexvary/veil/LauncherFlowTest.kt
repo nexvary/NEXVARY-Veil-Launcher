@@ -156,11 +156,11 @@ class LauncherFlowTest {
         }
     }
 
-    private fun capture(activity: android.app.Activity, name: String) {
-        val view=activity.window.decorView
+    private fun capture(activity: android.app.Activity, name: String) = captureView(activity.window.decorView,name)
+    private fun captureView(view: android.view.View,name: String) {
         val bitmap=android.graphics.Bitmap.createBitmap(view.width,view.height,android.graphics.Bitmap.Config.ARGB_8888)
         view.draw(android.graphics.Canvas(bitmap))
-        val file=java.io.File(activity.getExternalFilesDir(null),"$name.png")
+        val file=java.io.File(context.getExternalFilesDir(null),"$name.png")
         file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) }
         bitmap.recycle()
         // Stream bytes through the shell pipe; scoped storage can deny shell reads of app files.
@@ -315,7 +315,11 @@ class LauncherFlowTest {
             onView(withId(R.id.presentation_picker)).perform(click())
             androidx.test.espresso.Espresso.onData(org.hamcrest.Matchers.equalTo(context.getString(R.string.disguised))).perform(click())
             onView(withHint(R.string.label)).perform(replaceText("Desk Utility"),closeSoftKeyboard())
-            captureForeground("app-disguise-form-en")
+            onView(withHint(R.string.label)).perform(object: androidx.test.espresso.ViewAction {
+                override fun getConstraints()=isDisplayed()
+                override fun getDescription()="Capture the rendered disguise dialog"
+                override fun perform(controller: androidx.test.espresso.UiController,view: android.view.View) { captureView(view.rootView,"app-disguise-form-en") }
+            })
             onView(withText(R.string.save)).perform(click())
             val rule=VeilStore(context).load().rules.first { it.target.packageName==target.packageName && VeilProfile.PRIVACY in it.profiles }
             Assert.assertEquals(com.nexvary.veil.core.VeilPresentation.DISGUISED,rule.presentation)
