@@ -234,7 +234,7 @@ class LauncherFlowTest {
             onView(withText(R.string.control)).check(doesNotExist())
             Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
             onView(withText(R.string.notes)).perform(click())
-            onView(withId(R.id.note_input)).check(matches(withText("")))
+            onView(withId(R.id.note_input)).check(matches(withText(""))).perform(closeSoftKeyboard())
             androidx.test.espresso.Espresso.pressBack()
             onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
         }
