@@ -107,6 +107,7 @@ class LauncherFlowTest {
         val file=java.io.File(activity.getExternalFilesDir(null),"$name.png")
         file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) }
         bitmap.recycle()
+        shell("mkdir -p /data/local/tmp/veil-ui-proof; cp "+file.absolutePath+" /data/local/tmp/veil-ui-proof/")
     }
     @Test fun decoyMappingRoutesToNotesAndHiddenIdentityIsNotSearchable() {
         val catalog=com.nexvary.veil.launcher.AppCatalog(context)
