@@ -311,10 +311,11 @@ class LauncherFlowTest {
             onView(withText(R.string.privacy)).perform(click())
             onView(withId(R.id.management_search)).perform(replaceText(target.label),closeSoftKeyboard())
             scenario.onActivity { capture(it,"app-management-en") }
-            onView(withText(target.label)).perform(click())
+            onView(org.hamcrest.Matchers.allOf(withText(target.label),org.hamcrest.Matchers.not(withId(R.id.management_search)))).perform(click())
             onView(withId(R.id.presentation_picker)).perform(click())
             androidx.test.espresso.Espresso.onData(org.hamcrest.Matchers.equalTo(context.getString(R.string.disguised))).perform(click())
             onView(withHint(R.string.label)).perform(replaceText("Desk Utility"),closeSoftKeyboard())
+            captureForeground("app-disguise-form-en")
             onView(withText(R.string.save)).perform(click())
             val rule=VeilStore(context).load().rules.first { it.target.packageName==target.packageName && VeilProfile.PRIVACY in it.profiles }
             Assert.assertEquals(com.nexvary.veil.core.VeilPresentation.DISGUISED,rule.presentation)
@@ -323,7 +324,7 @@ class LauncherFlowTest {
             onView(withText(R.string.profiles)).check(matches(isDisplayed()))
             androidx.test.espresso.Espresso.pressBack()
             onView(withId(R.id.app_search)).perform(replaceText("Desk Utility"),closeSoftKeyboard())
-            onView(withText("Desk Utility")).check(matches(isDisplayed()))
+            onView(org.hamcrest.Matchers.allOf(withText("Desk Utility"),isDescendantOfA(withId(R.id.app_grid)))).check(matches(isDisplayed()))
         }
     }
     @Test fun notesPersistAndEmergencyDoesNotExposePrivateNotes() {
