@@ -131,7 +131,10 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                 val tile=entries[position]
                 if(tile.app!=null) {
                     // Re-resolve against the current policy at click time to close stale-view races.
-                    val fresh=catalog.load(config.policy(session.current())).firstOrNull { it.identity==tile.app.identity }
+                    val clickProfile=session.current()
+                    if(clickProfile!=profile) { emergency(); return@setOnItemClickListener }
+                    val fresh=catalog.load(config.policy(clickProfile)).firstOrNull { it.identity==tile.app.identity }
+                    if(session.current()!=clickProfile) { emergency(); return@setOnItemClickListener }
                     if(fresh!=null) {
                         if(!fresh.decision.launchRealTarget) {
                             val key=fresh.decision.iconOverrideKey ?: "calculator"
@@ -159,6 +162,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                 privateGrid.setOnItemClickListener { _,_,position,_ ->
                     if(session.current()!=VeilProfile.PRIVACY) { emergency(); return@setOnItemClickListener }
                     val app=catalog.load(config.policy(VeilProfile.PRIVACY),true).firstOrNull { it.identity==items[position].app?.identity }
+                    if(session.current()!=VeilProfile.PRIVACY) { emergency(); return@setOnItemClickListener }
                     if(app!=null && app.decision.launchRealTarget) catalog.launch(app)
                     else if(app!=null) utility(app.decision.iconOverrideKey ?: "calculator")
                 }
