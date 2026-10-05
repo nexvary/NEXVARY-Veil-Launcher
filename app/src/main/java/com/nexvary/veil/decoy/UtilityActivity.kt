@@ -13,7 +13,12 @@ class UtilityActivity : Activity() {
     private val expire=object: Runnable {
         override fun run() { if(com.nexvary.veil.auth.VeilRuntime.session.current()!=utilityProfile) finish() else handler.postDelayed(this,1000) }
     }
-    override fun onResume() { super.onResume(); handler.postDelayed(expire,1000) }
+    override fun onResume() {
+        super.onResume()
+        // Reject a stale private utility before it draws on return from the background.
+        if(com.nexvary.veil.auth.VeilRuntime.session.current()!=utilityProfile) { finish(); return }
+        handler.removeCallbacks(expire); handler.postDelayed(expire,1000)
+    }
     override fun onPause() { handler.removeCallbacks(expire); super.onPause() }
     override fun onDestroy() { handler.removeCallbacks(expire); super.onDestroy() }
 
