@@ -13,7 +13,7 @@ Privacy-first Android launcher focused on **application identity virtualization*
 - Functional local Calculator, Notes and Clock; local Decoy Settings, including brightness, sound, language and appearance.
 - LauncherApps exact-component launching and Android 15+ Private Space runtime gates, quiet-state filtering and separate lockable/hideable container.
 - Arabic RTL and English resources, window insets and AndroidX gesture Back.
-- Unit tests, Android 15 instrumentation gate, lint, debug artifacts and source security/leakage documentation.
+- Unit tests, Android 14/15/16 instrumentation matrix, lint, debug artifacts and source security/leakage documentation.
 
 ## First use
 1. Open Veil and choose Set up profiles.
