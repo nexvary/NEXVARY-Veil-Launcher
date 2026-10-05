@@ -100,6 +100,34 @@ class LauncherFlowTest {
         }
     }
 
+    @Test fun disguisedTileUsesAliasIconAndLaunchesRealExactTarget() {
+        val catalog=com.nexvary.veil.launcher.AppCatalog(context)
+        val target=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true)
+            .first { it.packageName=="com.android.settings" && !it.privateSpace }
+        VeilStore(context).save(VeilStore(context).load().apply {
+            rules=listOf(com.nexvary.veil.core.DisguiseRule(target.identity,
+                com.nexvary.veil.core.VeilPresentation.DISGUISED,"Desk Utility","clock",setOf(VeilProfile.PRIVACY)))
+        })
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.home_clock)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
+            onView(withId(R.id.app_search)).perform(typeText("Desk Utility"),closeSoftKeyboard())
+            val tile=catalog.load(VeilStore(context).load().policy(VeilProfile.PRIVACY)).single { it.label=="Desk Utility" }
+            Assert.assertEquals(target.component,tile.component)
+            Assert.assertEquals(target.user,tile.user)
+            Assert.assertEquals("clock",tile.decision.iconOverrideKey)
+            Assert.assertTrue(tile.decision.launchRealTarget)
+            scenario.onActivity { capture(it,"disguised-tile-en") }
+            onView(withText("Desk Utility")).perform(click())
+            val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
+            val end=android.os.SystemClock.elapsedRealtime()+10_000
+            while(automation.rootInActiveWindow?.packageName?.toString()!=target.packageName && android.os.SystemClock.elapsedRealtime()<end) Thread.sleep(100)
+            Assert.assertEquals(target.packageName,automation.rootInActiveWindow?.packageName?.toString())
+        }
+    }
+
     private fun capture(activity: android.app.Activity, name: String) {
         val view=activity.window.decorView
         val bitmap=android.graphics.Bitmap.createBitmap(view.width,view.height,android.graphics.Bitmap.Config.ARGB_8888)
