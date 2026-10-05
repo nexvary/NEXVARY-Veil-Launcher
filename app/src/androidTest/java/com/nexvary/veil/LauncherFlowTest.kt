@@ -138,7 +138,7 @@ class LauncherFlowTest {
         // Stream bytes through the shell pipe; scoped storage can deny shell reads of app files.
         shell("mkdir -p /data/local/tmp/veil-ui-proof")
         val destination="/data/local/tmp/veil-ui-proof/$name.png"
-        val pipes=InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommandRw("sh -c 'cat > $destination'")
+        val pipes=InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommandRw("dd of=$destination")
         android.os.ParcelFileDescriptor.AutoCloseOutputStream(pipes[1]).use { output -> file.inputStream().use { it.copyTo(output) } }
         android.os.ParcelFileDescriptor.AutoCloseInputStream(pipes[0]).use { it.readBytes() }
         Assert.assertTrue("Screenshot must survive test package cleanup",shell("wc -c $destination").trim().startsWith(file.length().toString()))
