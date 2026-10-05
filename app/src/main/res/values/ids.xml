@@ -12,4 +12,7 @@
     <item name="limited_pin_input" type="id" />
     <item name="limited_pin_confirm" type="id" />
     <item name="pin_setup_save" type="id" />
+    <item name="wizard_next" type="id" />
+    <item name="management_search" type="id" />
+    <item name="clock_seconds_toggle" type="id" />
 </resources>

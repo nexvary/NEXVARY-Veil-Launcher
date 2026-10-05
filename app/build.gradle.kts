@@ -18,8 +18,8 @@ android {
         applicationId = "com.nexvary.veil"
         minSdk = 28
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.2.0-alpha02"
+        versionCode = 4
+        versionName = "0.2.0-alpha03"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["notClass"] = "com.nexvary.veil.LifecycleFixtureTest"
     }

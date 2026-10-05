@@ -44,6 +44,7 @@ class LauncherFlowTest {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use {
             onView(withText(R.string.settings)).perform(click())
             onView(withText(R.string.brightness)).check(matches(isDisplayed()))
+            captureForeground("settings-en")
             onView(withText(R.string.control)).check(doesNotExist())
             onView(withText(R.string.back)).perform(click())
             onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
@@ -71,6 +72,7 @@ class LauncherFlowTest {
             onView(withId(R.id.calculator_input)).perform(typeText("2+3*4"),closeSoftKeyboard())
             onView(withText(R.string.result)).perform(click())
             onView(withId(R.id.calculator_result)).check(matches(withText("14.0")))
+            captureForeground("calculator-en")
             onView(withText(R.string.back)).perform(click())
         }
     }
@@ -167,6 +169,32 @@ class LauncherFlowTest {
         android.os.ParcelFileDescriptor.AutoCloseInputStream(pipes[0]).use { it.readBytes() }
         Assert.assertTrue("Screenshot must survive test package cleanup",shell("wc -c $destination").trim().startsWith(file.length().toString()))
     }
+    private fun captureForeground(name: String) {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val activity=androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance()
+                .getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED).single()
+            capture(activity,name)
+        }
+    }
+    @Test fun clockSecondsStopwatchAndBackWork() {
+        ActivityScenario.launch<UtilityActivity>(Intent(context,UtilityActivity::class.java).putExtra("utility","clock")).use { scenario ->
+            onView(withId(R.id.clock_seconds_toggle)).perform(click())
+            scenario.onActivity { activity ->
+                fun clocks(view: android.view.View): List<android.widget.TextClock> = when(view) {
+                    is android.widget.TextClock -> listOf(view)
+                    is android.view.ViewGroup -> (0 until view.childCount).flatMap { clocks(view.getChildAt(it)) }
+                    else -> emptyList()
+                }
+                Assert.assertEquals("HH:mm:ss",clocks(activity.window.decorView).first().format24Hour.toString())
+                capture(activity,"clock-en")
+            }
+            onView(withText(R.string.start_timer)).perform(scrollTo(),click())
+            onView(withText(R.string.pause_timer)).check(matches(isDisplayed())).perform(click())
+            onView(withText(R.string.reset_timer)).perform(click())
+            onView(withText(R.string.start_timer)).check(matches(isDisplayed()))
+            onView(withText(R.string.back)).perform(click())
+        }
+    }
     @Test fun decoyMappingRoutesToNotesAndHiddenIdentityIsNotSearchable() {
         val catalog=com.nexvary.veil.launcher.AppCatalog(context)
         val app=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true).first { it.packageName!="com.android.settings" }
@@ -203,6 +231,7 @@ class LauncherFlowTest {
                     capture(activity,"decoy-grid-ar")
                 }
                 onView(withText(R.string.settings)).perform(click())
+                captureForeground("settings-ar")
                 onView(withText(R.string.back)).perform(click())
                 onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
             }
@@ -244,12 +273,18 @@ class LauncherFlowTest {
     @Test fun setupWizardPersistsDistinctPinsAndOpensProtectedCenter() {
         VeilStore(context).save(VeilConfig())
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            scenario.onActivity { capture(it,"welcome-en") }
             onView(withText(R.string.setup)).perform(click())
+            scenario.onActivity { capture(it,"setup-private-en") }
             onView(withId(R.id.private_pin_input)).perform(scrollTo(),typeText("246810"),closeSoftKeyboard())
             onView(withId(R.id.private_pin_confirm)).perform(scrollTo(),typeText("246810"),closeSoftKeyboard())
+            onView(withId(R.id.wizard_next)).perform(click())
+            scenario.onActivity { capture(it,"setup-decoy-en") }
             onView(withId(R.id.decoy_pin_input)).perform(scrollTo(),typeText("135790"),closeSoftKeyboard())
             onView(withId(R.id.decoy_pin_confirm)).perform(scrollTo(),typeText("135790"),closeSoftKeyboard())
-            onView(withId(R.id.pin_setup_save)).perform(scrollTo(),click())
+            onView(withId(R.id.wizard_next)).perform(click())
+            scenario.onActivity { capture(it,"setup-ready-en") }
+            onView(withId(R.id.pin_setup_save)).perform(click())
             waitFor(scenario) { val views=arrayListOf<android.view.View>(); it.findViewById<android.view.View>(android.R.id.content).findViewsWithText(views,it.getString(R.string.profiles),android.view.View.FIND_VIEWS_WITH_TEXT); views.isNotEmpty() }
             val saved=VeilStore(context).load()
             Assert.assertEquals(VeilProfile.PRIVACY,PinProfileResolver(saved.pins).resolve("246810".toCharArray()))
