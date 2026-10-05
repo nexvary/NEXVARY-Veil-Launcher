@@ -2,7 +2,7 @@
 
 This is a scoped source and automated-test audit, not a physical-device certification. Veil concealment does not change Android package identity. PRIVATE_SPACE requires Android 15+, default HOME authorization and an existing private user; primary-profile copies receive no isolation benefit.
 
-Verified baseline: [`d6f6fac`](https://github.com/nexvary/NEXVARY-Veil-Launcher/commit/d6f6facf92b36e1e368fa993afd7e66c0ec9ca5a), [GitHub Actions run 37256124444](https://github.com/nexvary/NEXVARY-Veil-Launcher/actions/runs/37256124444), 2026-10-05. Unit tests: 13 passed. Instrumentation: API 34: 9 passed, 1 unsupported Private Space test skipped; API 35: 10 passed, none skipped; API 36: 10 passed, none skipped. Unit/lint/build and all three emulator jobs succeeded. Further test changes must earn their own green run.
+Verified baseline: [`3720925`](https://github.com/nexvary/NEXVARY-Veil-Launcher/commit/3720925c28285b0b867b29b1a344d38bf5416d5c), [GitHub Actions run 37257801702](https://github.com/nexvary/NEXVARY-Veil-Launcher/actions/runs/37257801702), 2026-10-05. Unit tests: 13 passed. Instrumentation: API 34: 10 passed, 1 unsupported Private Space test skipped; API 35: 11 passed, none skipped; API 36: 11 passed, none skipped. Unit/lint/build and all three emulator jobs succeeded. Arabic translated strings and RTL, substituted alias/icon with a real-target launch, and saved UI proof are verified. Further test changes must earn their own green run.
 
 | Scenario | Risk | Standard protection | Private Space protection | Managed protection | Residual limitation | Test status |
 |---|---|---|---|---|---|---|

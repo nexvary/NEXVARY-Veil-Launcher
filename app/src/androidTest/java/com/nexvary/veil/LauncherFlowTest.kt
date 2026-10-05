@@ -47,6 +47,9 @@ class LauncherFlowTest {
             onView(withText(R.string.control)).check(doesNotExist())
             onView(withText(R.string.back)).perform(click())
             onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
+            onView(withText(R.string.settings)).perform(click())
+            androidx.test.espresso.Espresso.pressBack()
+            onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
         }
     }
     @Test fun encryptedConfigRejectsTampering() {
@@ -55,6 +58,13 @@ class LauncherFlowTest {
         Assert.assertFalse(String(bytes).contains("246810"))
         bytes[bytes.lastIndex]=(bytes.last().toInt() xor 1).toByte(); file.writeBytes(bytes)
         Assert.assertThrows(Exception::class.java) { VeilStore(context).load() }
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            scenario.onActivity { Assert.assertEquals(4,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+            onView(withText(R.string.control)).check(doesNotExist())
+            scenario.recreate()
+            scenario.onActivity { Assert.assertEquals(4,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+            Assert.assertArrayEquals(bytes,file.readBytes())
+        }
     }
     @Test fun calculatorWorksAndBackClosesUtility() {
         ActivityScenario.launch<UtilityActivity>(Intent(context,UtilityActivity::class.java).putExtra("utility","calculator")).use {
@@ -202,6 +212,31 @@ class LauncherFlowTest {
             onView(withText(R.string.back)).perform(click())
             onView(withText(R.string.lock)).perform(click())
             onView(withText(R.string.control)).check(doesNotExist())
+        }
+    }
+
+    @Test fun notesPersistAndEmergencyDoesNotExposePrivateNotes() {
+        context.getSharedPreferences("utility.notes.PRIVACY",Context.MODE_PRIVATE).edit().clear().commit()
+        context.getSharedPreferences("utility.notes.DECOY",Context.MODE_PRIVATE).edit().clear().commit()
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.home_clock)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
+            onView(withText(R.string.notes)).perform(click())
+            onView(withId(R.id.note_input)).perform(replaceText("Disposable private test note"),closeSoftKeyboard())
+            onView(withText(R.string.save)).perform(click())
+            androidx.test.espresso.Espresso.pressBack()
+            onView(withText(R.string.notes)).perform(click())
+            onView(withId(R.id.note_input)).check(matches(withText("Disposable private test note")))
+            onView(withText(R.string.back)).perform(click())
+            onView(withId(R.id.app_search)).perform(longClick())
+            onView(withText(R.string.control)).check(doesNotExist())
+            Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
+            onView(withText(R.string.notes)).perform(click())
+            onView(withId(R.id.note_input)).check(matches(withText("")))
+            androidx.test.espresso.Espresso.pressBack()
+            onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
         }
     }
 
