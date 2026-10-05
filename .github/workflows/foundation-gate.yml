@@ -36,12 +36,16 @@ jobs:
       - name: Android lint
         run: gradle lintDebug --stacktrace || { cat app/build/reports/lint-results-debug.txt; exit 1; }
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+        run: gradle assembleDebug assembleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: NEXVARY-Veil-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXVARY-Veil-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -82,7 +86,7 @@ jobs:
             adb shell svc power stayon true
             adb shell input keyevent KEYCODE_WAKEUP
             adb shell wm dismiss-keyguard
-            VEIL_TEST_STATUS=0; gradle connectedDebugAndroidTest --stacktrace || VEIL_TEST_STATUS=$?; mkdir -p ui-proof; adb shell dumpsys window > ui-proof/window-state.txt; adb shell dumpsys power > ui-proof/power-state.txt; adb pull /data/local/tmp/veil-ui-proof ui-proof || true; exit "$VEIL_TEST_STATUS"
+            VEIL_TEST_STATUS=0; gradle connectedDebugAndroidTest --stacktrace || VEIL_TEST_STATUS=$?; if [ "$VEIL_TEST_STATUS" -eq 0 ]; then python3 scripts/verify_lifecycle.py || VEIL_TEST_STATUS=$?; fi; mkdir -p ui-proof; adb shell dumpsys window > ui-proof/window-state.txt; adb shell dumpsys power > ui-proof/power-state.txt; adb pull /data/local/tmp/veil-ui-proof ui-proof || true; exit "$VEIL_TEST_STATUS"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

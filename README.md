@@ -3,7 +3,7 @@
 Privacy-first Android launcher focused on **application identity virtualization**: apps can be represented inside the launcher with decoy names/icons, hidden from ordinary launcher surfaces, and revealed through user-defined authenticated actions.
 
 ## Status
-0.2.0 alpha development milestone. This is not a release candidate; see the security review and the latest CI for verified results and remaining device/OEM checks.
+0.2.0-alpha02 development milestone. This is not a release candidate; see the security review and the latest CI for verified results and remaining device/OEM checks.
 
 ## Implemented paths
 - Encrypted multi-PIN setup and PRIVACY / DECOY / optional NORMAL routing.
@@ -45,3 +45,8 @@ Android 15 and Android 16 first, with compatibility evaluated for earlier suppor
 
 ## Package
 `com.nexvary.veil`
+
+## Lifecycle verification
+CI also runs `python3 scripts/verify_lifecycle.py` after the normal instrumented suite. It installs the debug and test APKs on a disposable emulator, authenticates using synthetic test data, kills the actual process, then reboots the actual emulator during a second authenticated session. It checks concealed startup and authenticates again with the retained encrypted configuration. It refuses physical devices. Evidence is `ui-proof/lifecycle-result.json`, XML hierarchies and instrumentation transcripts in each Android test artifact. The fixture is excluded from the normal suite and never compiled into the shipping APK.
+
+CI also produces an **unsigned release build**, separate from Debug. It is a build-validation artifact, not an installable signed release or release candidate. Production signing and physical OEM verification remain required.

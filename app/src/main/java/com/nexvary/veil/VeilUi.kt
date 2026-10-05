@@ -30,7 +30,12 @@ object VeilUi {
         text=value; textSize=size; setTextColor(Color.rgb(221,228,237)); setPadding(0,12,0,12)
     }
     fun button(activity: Activity, id: Int, action: () -> Unit) = Button(activity).apply {
-        setText(id); isAllCaps=false; setOnClickListener { action() }
+        setText(id); isAllCaps=false; setTextColor(Color.rgb(221,228,237))
+        minimumHeight=dp(activity,48)
+        setPadding(dp(activity,12),dp(activity,8),dp(activity,12),dp(activity,8))
+        background=android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x447ccac3),card(),null)
+        layoutParams=LinearLayout.LayoutParams(-1,-2).apply { topMargin=dp(activity,4); bottomMargin=dp(activity,4) }
+        setOnClickListener { action() }
     }
     fun card(): GradientDrawable = GradientDrawable().apply {
         setColor(Color.rgb(30,35,44)); cornerRadius=22f; setStroke(1,Color.rgb(123,140,159))

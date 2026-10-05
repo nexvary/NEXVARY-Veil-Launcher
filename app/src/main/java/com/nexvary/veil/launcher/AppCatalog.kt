@@ -20,6 +20,20 @@ class AppCatalog(private val context: Context, private val policy: VeilPolicyEng
     private val launcher = context.getSystemService(LauncherApps::class.java)
     private val users = context.getSystemService(UserManager::class.java)
     private val privateSpace = PrivateSpaceBridge(context)
+    fun observe(onChange: () -> Unit): LauncherApps.Callback {
+        val callback=object: LauncherApps.Callback() {
+            override fun onPackageAdded(packageName: String,user: UserHandle) = onChange()
+            override fun onPackageRemoved(packageName: String,user: UserHandle) = onChange()
+            override fun onPackageChanged(packageName: String,user: UserHandle) = onChange()
+            override fun onPackagesAvailable(packageNames: Array<out String>,user: UserHandle,replacing: Boolean) = onChange()
+            override fun onPackagesUnavailable(packageNames: Array<out String>,user: UserHandle,replacing: Boolean) = onChange()
+            override fun onPackagesSuspended(packageNames: Array<out String>,user: UserHandle) = onChange()
+            override fun onPackagesUnsuspended(packageNames: Array<out String>,user: UserHandle) = onChange()
+        }
+        launcher.registerCallback(callback,android.os.Handler(android.os.Looper.getMainLooper()))
+        return callback
+    }
+    fun stopObserving(callback: LauncherApps.Callback) { launcher.unregisterCallback(callback) }
     private val settingsPackages: Set<String>
         get() = setOfNotNull("com.android.settings", context.packageManager.resolveActivity(
             Intent(Settings.ACTION_SETTINGS), PackageManager.MATCH_DEFAULT_ONLY

@@ -195,6 +195,35 @@ class LauncherFlowTest {
         } finally { localeManager.applicationLocales=original }
     }
 
+    @Test fun landscapeLargeTextRendersAndRotationRelocks() {
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim()=="1")
+        val original=shell("settings get system font_scale").trim()
+        try {
+            shell("settings put system font_scale 1.5")
+            ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+                onView(withId(R.id.home_clock)).perform(longClick())
+                onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+                onView(withText(R.string.unlock)).perform(click())
+                waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
+                scenario.onActivity { it.requestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+                waitFor(scenario) { it.resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE }
+                Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
+                onView(withText(R.string.control)).check(doesNotExist())
+                onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
+                scenario.onActivity {
+                    val grid=it.findViewById<android.widget.GridView>(R.id.app_grid)
+                    Assert.assertTrue(grid.height>=VeilUi.dp(it,48))
+                    capture(it,"landscape-large-text")
+                }
+                onView(withText(R.string.settings)).perform(click())
+                onView(withText(R.string.back)).perform(click())
+                onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
+            }
+        } finally {
+            if(original.toFloatOrNull()!=null) shell("settings put system font_scale $original") else shell("settings delete system font_scale")
+        }
+    }
+
     @Test fun setupWizardPersistsDistinctPinsAndOpensProtectedCenter() {
         VeilStore(context).save(VeilConfig())
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->

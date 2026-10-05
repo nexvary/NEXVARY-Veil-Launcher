@@ -34,6 +34,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private val worker=Executors.newSingleThreadExecutor()
     private val handler=Handler(Looper.getMainLooper())
     private var dialog: AlertDialog?=null
+    private var catalogCallback: android.content.pm.LauncherApps.Callback?=null
     private val expiry=object: Runnable {
         override fun run() {
             if(session.current()!=renderedProfile) emergency()
@@ -54,6 +55,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         }
         if(Build.VERSION.SDK_INT>=33) registerReceiver(profileReceiver,filter,Context.RECEIVER_NOT_EXPORTED) else registerReceiver(profileReceiver,filter)
         privateLockConfirmed=space.lockAll()
+        catalogCallback=catalog.observe { if(!isDestroyed && page=="home") showLauncher() }
         showLauncher()
     }
     override fun onResume() {
@@ -68,6 +70,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         if(isChangingConfigurations) session.lock()
     }
     override fun onDestroy() {
+        catalogCallback?.let(catalog::stopObserving)
         generation++; dialog?.dismiss(); handler.removeCallbacksAndMessages(null); worker.shutdownNow()
         unregisterReceiver(profileReceiver); super.onDestroy()
     }
@@ -91,13 +94,18 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         renderedProfile=profile
         val root=VeilUi.root(this,profile!=VeilProfile.DECOY)
         val clock=TextClock(this).apply {
-            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=38f; gravity=Gravity.CENTER; id=R.id.home_clock
+            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE) 24f else 38f; gravity=Gravity.CENTER; id=R.id.home_clock
             setOnLongClickListener { if(!storageFailed) { if(config.pins.isEmpty()) showSetup() else showPin() }; true }
         }
-        root.addView(clock)
         val search=EditText(this).apply { id=R.id.app_search; isSaveEnabled=false; setHint(R.string.search); isSingleLine=true
             setOnLongClickListener { if(config.emergencyEnabled) emergency(); true } }
-        root.addView(search)
+        if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            root.addView(LinearLayout(this).apply {
+                gravity=Gravity.CENTER_VERTICAL
+                addView(clock,LinearLayout.LayoutParams(-2,-2))
+                addView(search,LinearLayout.LayoutParams(0,-2,1f))
+            })
+        } else { root.addView(clock); root.addView(search) }
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
         if(config.pins.isEmpty() && !storageFailed) root.addView(VeilUi.button(this,R.string.setup) { showSetup() })
         val grid=GridView(this).apply {
@@ -105,9 +113,12 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             stretchMode=GridView.STRETCH_COLUMN_WIDTH; verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
         }
         root.addView(grid,LinearLayout.LayoutParams(-1,0,1f))
+        // Filter one policy-checked snapshot while typing. Resume/profile broadcasts rebuild it.
+        val snapshot=if(storageFailed) emptyList() else catalog.load(config.policy(profile))
         fun render(query: String) {
             val current=session.current()
-            val apps=if(storageFailed) emptyList() else catalog.load(config.policy(current))
+            if(current!=profile) { emergency(); return }
+            val apps=snapshot
             val entries=apps.filter { it.label.contains(query,true) }.map { Tile(it.label,it) }.toMutableList()
             listOf(R.string.calculator to "calculator",R.string.notes to "notes",R.string.clock to "clock",R.string.settings to "settings").forEach { (id,key) ->
                 val label=getString(id)
