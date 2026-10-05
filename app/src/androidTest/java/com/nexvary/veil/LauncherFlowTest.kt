@@ -33,6 +33,7 @@ class LauncherFlowTest {
     @Test fun startsConcealedSearchAndRecreationStayConcealed() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
             onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
+            scenario.onActivity { Assert.assertFalse("Home must not open the search keyboard automatically",it.findViewById<android.widget.EditText>(R.id.app_search).hasFocus()) }
             onView(withId(R.id.app_search)).perform(typeText("zzzzzz"),closeSoftKeyboard())
             onView(withText(R.string.control)).check(doesNotExist())
             scenario.recreate()
@@ -297,6 +298,34 @@ class LauncherFlowTest {
         }
     }
 
+    @Test fun appManagementUiSavesDisguiseAndReturnsThroughCenter() {
+        val target=com.nexvary.veil.launcher.AppCatalog(context).load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true)
+            .groupBy { it.label }.values.first { it.size==1 && !it.single().privateSpace && it.single().packageName!="com.android.settings" }.single()
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.home_clock)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
+            onView(withText(R.string.control)).perform(click())
+            onView(withText(R.string.visibility)).perform(click())
+            onView(withText(R.string.privacy)).perform(click())
+            onView(withId(R.id.management_search)).perform(replaceText(target.label),closeSoftKeyboard())
+            scenario.onActivity { capture(it,"app-management-en") }
+            onView(withText(target.label)).perform(click())
+            onView(withId(R.id.presentation_picker)).perform(click())
+            androidx.test.espresso.Espresso.onData(org.hamcrest.Matchers.equalTo(context.getString(R.string.disguised))).perform(click())
+            onView(withHint(R.string.label)).perform(replaceText("Desk Utility"),closeSoftKeyboard())
+            onView(withText(R.string.save)).perform(click())
+            val rule=VeilStore(context).load().rules.first { it.target.packageName==target.packageName && VeilProfile.PRIVACY in it.profiles }
+            Assert.assertEquals(com.nexvary.veil.core.VeilPresentation.DISGUISED,rule.presentation)
+            Assert.assertEquals("Desk Utility",rule.decoyLabel)
+            onView(withText(R.string.back)).perform(click())
+            onView(withText(R.string.profiles)).check(matches(isDisplayed()))
+            androidx.test.espresso.Espresso.pressBack()
+            onView(withId(R.id.app_search)).perform(replaceText("Desk Utility"),closeSoftKeyboard())
+            onView(withText("Desk Utility")).check(matches(isDisplayed()))
+        }
+    }
     @Test fun notesPersistAndEmergencyDoesNotExposePrivateNotes() {
         context.getSharedPreferences("utility.notes.PRIVACY",Context.MODE_PRIVATE).edit().clear().commit()
         context.getSharedPreferences("utility.notes.DECOY",Context.MODE_PRIVATE).edit().clear().commit()

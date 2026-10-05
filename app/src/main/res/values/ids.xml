@@ -15,4 +15,5 @@
     <item name="wizard_next" type="id" />
     <item name="management_search" type="id" />
     <item name="clock_seconds_toggle" type="id" />
+    <item name="presentation_picker" type="id" />
 </resources>

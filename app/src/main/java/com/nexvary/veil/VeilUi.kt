@@ -23,6 +23,7 @@ object VeilUi {
             orientation=LinearLayout.VERTICAL
             background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(0xff111923.toInt(),0xff080d14.toInt()))
             layoutDirection=View.LAYOUT_DIRECTION_LOCALE
+            isFocusableInTouchMode=true
         }
         ViewCompat.setOnApplyWindowInsetsListener(root) { view,insets ->
             val safe=insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime())
@@ -30,7 +31,7 @@ object VeilUi {
         }
         activity.window.statusBarColor=Color.TRANSPARENT
         activity.window.navigationBarColor=0xff080d14.toInt()
-        activity.setContentView(root); ViewCompat.requestApplyInsets(root)
+        activity.setContentView(root);root.requestFocus(); ViewCompat.requestApplyInsets(root)
         return root
     }
     fun dp(activity: Activity,value: Int)=(value*activity.resources.displayMetrics.density).toInt()
@@ -92,7 +93,7 @@ object VeilUi {
     }
     fun scroll(activity: Activity,root: LinearLayout): LinearLayout {
         val content=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL }
-        root.addView(ScrollView(activity).apply { isFillViewport=true;addView(content) },LinearLayout.LayoutParams(-1,0,1f))
+        root.addView(ScrollView(activity).apply { isFillViewport=true;isVerticalScrollBarEnabled=false;addView(content) },LinearLayout.LayoutParams(-1,0,1f))
         return content
     }
 }

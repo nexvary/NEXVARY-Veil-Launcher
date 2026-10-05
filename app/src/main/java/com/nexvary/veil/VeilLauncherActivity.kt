@@ -121,7 +121,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val grid=GridView(this).apply {
             id=R.id.app_grid; columnWidth=tileColumnWidth(); numColumns=GridView.AUTO_FIT
             stretchMode=GridView.STRETCH_COLUMN_WIDTH; verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
-            horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
+            horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,4)
         }
         root.addView(grid,LinearLayout.LayoutParams(-1,0,1f))
         // Filter one policy-checked snapshot while typing. Resume/profile broadcasts rebuild it.
@@ -170,7 +170,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                 }
                 val privateGrid=GridView(this).apply {
                     columnWidth=tileColumnWidth(); numColumns=GridView.AUTO_FIT; stretchMode=GridView.STRETCH_COLUMN_WIDTH
-                    horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,8); verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
+                    horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,4); verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
                 }
                 val items=catalog.load(config.policy(profile),includePrivate=true).filter { it.privateSpace }.map { Tile(it.label,it) }
                 privateGrid.adapter=TileAdapter(items)
@@ -191,7 +191,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         }
     }
     private data class Tile(val label: String,val app: LaunchableApp?=null,val utility: String?=null)
-    private fun tileColumnWidth() = VeilUi.dp(this,(76*resources.configuration.fontScale.coerceAtLeast(1f)).toInt())
+    private fun tileColumnWidth() = VeilUi.dp(this,(66*resources.configuration.fontScale.coerceAtLeast(1f)).toInt())
     private inner class TileAdapter(private val items: List<Tile>): BaseAdapter() {
         override fun getCount()=items.size
         override fun getItem(position: Int)=items[position]
@@ -201,14 +201,14 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             return LinearLayout(this@VeilLauncherActivity).apply {
                 orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER
                 foreground=android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x336adcc9),null,VeilUi.card())
-                setPadding(VeilUi.dp(this@VeilLauncherActivity,8),VeilUi.dp(this@VeilLauncherActivity,12),VeilUi.dp(this@VeilLauncherActivity,8),VeilUi.dp(this@VeilLauncherActivity,8)); minimumHeight=VeilUi.dp(this@VeilLauncherActivity,104)
+                setPadding(VeilUi.dp(this@VeilLauncherActivity,3),VeilUi.dp(this@VeilLauncherActivity,12),VeilUi.dp(this@VeilLauncherActivity,3),VeilUi.dp(this@VeilLauncherActivity,8)); minimumHeight=VeilUi.dp(this@VeilLauncherActivity,104)
                 addView(ImageView(this@VeilLauncherActivity).apply {
                     if(tile.app?.icon!=null) setImageDrawable(tile.app.icon)
                     else setImageResource(when(tile.utility ?: tile.app?.decision?.iconOverrideKey) {
                         "notes" -> R.drawable.ic_notes; "clock" -> R.drawable.ic_clock; "settings" -> R.drawable.ic_settings; else -> R.drawable.ic_calculator
                     })
                 },LinearLayout.LayoutParams(VeilUi.dp(this@VeilLauncherActivity,52),VeilUi.dp(this@VeilLauncherActivity,52)))
-                addView(VeilUi.text(this@VeilLauncherActivity,tile.label,13f).apply {
+                addView(VeilUi.text(this@VeilLauncherActivity,tile.label,12.5f).apply {
                     gravity=Gravity.CENTER; minLines=2; maxLines=2; ellipsize=android.text.TextUtils.TruncateAt.END
                     setPadding(0,VeilUi.dp(this@VeilLauncherActivity,8),0,0)
                 })
@@ -254,12 +254,15 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private fun showWelcome() {
         val root=VeilUi.root(this)
         val body=VeilUi.scroll(this,root)
-        body.addView(VeilUi.icon(this,R.drawable.ic_veil,64).apply { layoutParams=LinearLayout.LayoutParams(VeilUi.dp(this@VeilLauncherActivity,64),VeilUi.dp(this@VeilLauncherActivity,64)).apply { gravity=Gravity.CENTER_HORIZONTAL;topMargin=VeilUi.dp(this@VeilLauncherActivity,16) } })
-        body.addView(VeilUi.text(this,getString(R.string.app_name),16f).apply { gravity=Gravity.CENTER;setTextColor(VeilUi.accent) })
-        body.addView(VeilUi.text(this,getString(R.string.welcome_title),27f).apply { typeface=android.graphics.Typeface.DEFAULT_BOLD })
-        body.addView(VeilUi.text(this,getString(R.string.welcome_body),15f).apply { setTextColor(VeilUi.muted) })
-        body.addView(VeilUi.info(this,R.string.private_intro,R.string.private_intro_body,R.drawable.ic_veil))
-        body.addView(VeilUi.info(this,R.string.decoy_intro,R.string.decoy_intro_body,R.drawable.ic_notes))
+        body.addView(LinearLayout(this).apply {
+            gravity=Gravity.CENTER_VERTICAL
+            addView(VeilUi.icon(this@VeilLauncherActivity,R.drawable.ic_veil,40))
+            addView(VeilUi.text(this@VeilLauncherActivity,getString(R.string.app_name),16f).apply { setTextColor(VeilUi.accent) },LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,10) })
+        })
+        body.addView(VeilUi.text(this,getString(R.string.welcome_title),24f).apply { typeface=android.graphics.Typeface.DEFAULT_BOLD })
+        body.addView(VeilUi.text(this,getString(R.string.welcome_body),14f).apply { setTextColor(VeilUi.muted) })
+        body.addView(VeilUi.info(this,R.string.private_intro,R.string.private_intro_body,R.drawable.ic_veil).apply { val p=VeilUi.dp(this@VeilLauncherActivity,12);setPadding(p,p,p,p) })
+        body.addView(VeilUi.info(this,R.string.decoy_intro,R.string.decoy_intro_body,R.drawable.ic_notes).apply { val p=VeilUi.dp(this@VeilLauncherActivity,12);setPadding(p,p,p,p) })
         body.addView(VeilUi.text(this,getString(R.string.setup_note),12f).apply { setTextColor(VeilUi.muted) })
         root.addView(VeilUi.primary(this,R.string.setup) { showSetup() })
         root.addView(VeilUi.button(this,R.string.language) { chooseLanguage() })
@@ -340,8 +343,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         page="control"
         renderedProfile=session.current()
         val root=VeilUi.root(this)
-        backAction=null
-        VeilUi.header(this,root,title) { showLauncher() }
+        backAction={ if(title==R.string.control) showLauncher() else showControl() }
+        VeilUi.header(this,root,title) { backAction?.invoke() }
         return VeilUi.scroll(this,root)
     }
     private fun showControl() {
@@ -414,7 +417,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val form=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; val padding=VeilUi.dp(this@VeilLauncherActivity,16);setPadding(padding,padding,padding,padding) }
         val old=config.rules.firstOrNull { it.target.packageName==app.packageName && it.target.userSerial==app.identity.userSerial && profile in it.profiles }
         val allow=CheckBox(this).apply { setText(R.string.allow); isChecked=profile==VeilProfile.PRIVACY || ("${app.packageName}|${app.identity.userSerial}" in config.allowlists[profile].orEmpty() || app.packageName in config.allowlists[profile].orEmpty()); isEnabled=profile!=VeilProfile.PRIVACY }; form.addView(allow)
-        val presentation=Spinner(this).apply { adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.real,R.string.disguised,R.string.hidden,R.string.decoy).map { getString(it) }); setSelection(old?.presentation?.ordinal ?: 0) }; form.addView(presentation)
+        val presentation=Spinner(this).apply { id=R.id.presentation_picker;adapter=ArrayAdapter(this@VeilLauncherActivity,android.R.layout.simple_spinner_dropdown_item,listOf(R.string.real,R.string.disguised,R.string.hidden,R.string.decoy).map { getString(it) }); setSelection(old?.presentation?.ordinal ?: 0) }; form.addView(presentation)
         val explanation=VeilUi.text(this,"",14f).apply { setTextColor(VeilUi.muted) };form.addView(explanation)
         presentation.onItemSelectedListener=object: AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?,view: View?,position: Int,id: Long) { explanation.setText(listOf(R.string.real_help,R.string.disguised_help,R.string.hidden_help,R.string.decoy_help)[position]) }
