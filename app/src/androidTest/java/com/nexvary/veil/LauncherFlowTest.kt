@@ -120,7 +120,7 @@ class LauncherFlowTest {
             Assert.assertEquals("clock",tile.decision.iconOverrideKey)
             Assert.assertTrue(tile.decision.launchRealTarget)
             scenario.onActivity { capture(it,"disguised-tile-en") }
-            onView(withText("Desk Utility")).perform(click())
+            onView(org.hamcrest.Matchers.allOf(withText("Desk Utility"),isDescendantOfA(withId(R.id.app_grid)))).perform(click())
             val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
             val end=android.os.SystemClock.elapsedRealtime()+10_000
             while(automation.rootInActiveWindow?.packageName?.toString()!=target.packageName && android.os.SystemClock.elapsedRealtime()<end) Thread.sleep(100)
