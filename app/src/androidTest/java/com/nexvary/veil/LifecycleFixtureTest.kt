@@ -22,6 +22,24 @@ class LifecycleFixtureTest {
     private val instrumentation=InstrumentationRegistry.getInstrumentation()
     private val context get()=instrumentation.targetContext
     private val canary="Private Canary"
+    private fun publishAuthenticatedHierarchy() {
+        // Reuse this instrumentation's accessibility connection. Starting a second
+        // uiautomator process would disconnect the active authenticated fixture.
+        val root=instrumentation.uiAutomation.rootInActiveWindow
+        Assert.assertNotNull(root)
+        val output=java.io.StringWriter()
+        val xml=android.util.Xml.newSerializer().apply { setOutput(output); startDocument("UTF-8",true) }
+        fun write(node: android.view.accessibility.AccessibilityNodeInfo) {
+            xml.startTag(null,"node")
+            xml.attribute(null,"text",node.text?.toString() ?: "")
+            xml.attribute(null,"package",node.packageName?.toString() ?: "")
+            for(index in 0 until node.childCount) node.getChild(index)?.let(::write)
+            xml.endTag(null,"node")
+        }
+        xml.startTag(null,"hierarchy"); write(root!!); xml.endTag(null,"hierarchy"); xml.endDocument()
+        val encoded=android.util.Base64.encodeToString(output.toString().toByteArray(Charsets.UTF_8),android.util.Base64.NO_WRAP)
+        ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("printf '%s' '$encoded' | base64 -d > /data/local/tmp/veil-lifecycle-authenticated.xml")).use { it.readBytes() }
+    }
     private fun unlock(scenario: ActivityScenario<VeilLauncherActivity>) {
         onView(withId(R.id.home_clock)).perform(longClick())
         onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
@@ -50,6 +68,7 @@ class LifecycleFixtureTest {
         Assert.assertEquals(2,VeilStore(context).load().pins.size)
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
             unlock(scenario)
+            publishAuthenticatedHierarchy()
             ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("touch /data/local/tmp/veil-lifecycle-ready")).use { it.readBytes() }
             // The external harness must kill/reboot the authenticated process, not call session.lock().
             Thread.sleep(90_000)

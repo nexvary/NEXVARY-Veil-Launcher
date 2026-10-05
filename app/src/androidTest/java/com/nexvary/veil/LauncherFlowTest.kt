@@ -83,6 +83,20 @@ class LauncherFlowTest {
         }
         Assert.assertTrue("Profile transition did not complete",matched)
     }
+    private fun waitForForeground(type: Class<out android.app.Activity>) {
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val end=android.os.SystemClock.elapsedRealtime()+30_000
+        var matched=false
+        while(!matched && android.os.SystemClock.elapsedRealtime()<end) {
+            instrumentation.runOnMainSync {
+                matched=androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance()
+                    .getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED)
+                    .any { type.isInstance(it) && it.hasWindowFocus() && !it.window.decorView.isLayoutRequested }
+            }
+            if(!matched) Thread.sleep(100)
+        }
+        Assert.assertTrue("Foreground activity transition did not complete",matched)
+    }
     @Test fun privacyAndDuressPinsSwitchActualLauncherAndRecreateRelocks() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
             onView(withId(R.id.home_clock)).perform(longClick())
@@ -206,7 +220,8 @@ class LauncherFlowTest {
                 onView(withText(R.string.unlock)).perform(click())
                 waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
                 scenario.onActivity { it.requestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
-                waitFor(scenario) { it.resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE }
+                waitFor(scenario) { it.resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE && com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.DECOY && it.findViewById<android.view.View>(R.id.app_grid)?.height?.let { height -> height>0 }==true }
+                waitForForeground(VeilLauncherActivity::class.java)
                 Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
                 onView(withText(R.string.control)).check(doesNotExist())
                 onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
@@ -216,7 +231,9 @@ class LauncherFlowTest {
                     capture(it,"landscape-large-text")
                 }
                 onView(withText(R.string.settings)).perform(click())
+                waitForForeground(com.nexvary.veil.decoy.DecoySettingsActivity::class.java)
                 onView(withText(R.string.back)).perform(click())
+                waitForForeground(VeilLauncherActivity::class.java)
                 onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
             }
         } finally {

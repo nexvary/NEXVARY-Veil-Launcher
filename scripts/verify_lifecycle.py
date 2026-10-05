@@ -72,7 +72,11 @@ def hold(name, prepare=False):
     process = subprocess.Popen(instrument("holdAuthenticatedSession", prepare), stdout=log, stderr=log)
     try:
         wait_for(lambda: adb("shell", "ls", "/data/local/tmp/veil-lifecycle-ready", check=False).endswith("veil-lifecycle-ready"))
-        assert "Private Canary" in visible_text(hierarchy(name + "-authenticated")), "Fixture was never authenticated"
+        # The running fixture owns UiAutomation until force-stop/reboot. Read its
+        # snapshot instead of launching a second automation client that kills it.
+        xml = adb("shell", "cat", "/data/local/tmp/veil-lifecycle-authenticated.xml")
+        (OUT / (name + "-authenticated.xml")).write_text(xml)
+        assert "Private Canary" in visible_text(ET.fromstring(xml)), "Fixture was never authenticated"
         return process, log
     except BaseException:
         process.terminate()
