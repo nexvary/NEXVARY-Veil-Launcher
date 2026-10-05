@@ -179,7 +179,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     }
     private fun pinField(hint: Int) = EditText(this).apply {
         setHint(hint); inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-        isSingleLine=true; setSaveEnabled(false); importantForAutofill=View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        isSingleLine=true; imeOptions=android.view.inputmethod.EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING; setSaveEnabled(false); importantForAutofill=View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
         filters=arrayOf(android.text.InputFilter.LengthFilter(12))
     }
     private fun showPin() {

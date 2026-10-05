@@ -2,6 +2,9 @@ package com.nexvary.veil.launcher
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.provider.Settings
 import android.content.pm.LauncherApps
 import android.graphics.drawable.Drawable
 import android.os.Process
@@ -17,6 +20,10 @@ class AppCatalog(private val context: Context, private val policy: VeilPolicyEng
     private val launcher = context.getSystemService(LauncherApps::class.java)
     private val users = context.getSystemService(UserManager::class.java)
     private val privateSpace = PrivateSpaceBridge(context)
+    private val settingsPackages: Set<String>
+        get() = setOfNotNull("com.android.settings", context.packageManager.resolveActivity(
+            Intent(Settings.ACTION_SETTINGS), PackageManager.MATCH_DEFAULT_ONLY
+        )?.activityInfo?.packageName)
     fun load(profile: VeilProfile, rules: Collection<DisguiseRule>): List<LaunchableApp> = load(ProfilePolicy(profile,rules=rules.toList()))
     fun load(profile: ProfilePolicy, includePrivate: Boolean = false, unfiltered: Boolean = false): List<LaunchableApp> {
         val result = mutableListOf<LaunchableApp>()
@@ -32,7 +39,7 @@ class AppCatalog(private val context: Context, private val policy: VeilPolicyEng
                 val decision = if (unfiltered) VisibilityDecision(true,true) else policy.decide(identity,profile.profile,profile.rules)
                 if (!unfiltered && (!decision.visible || !profile.allows(identity))) return@forEach
                 // Settings in DECOY must route locally even if explicitly allowlisted.
-                val effective = if (profile.settingsDecoy && identity.packageName == "com.android.settings") decision.copy(launchRealTarget=false,iconOverrideKey="settings") else decision
+                val effective = if (profile.settingsDecoy && identity.packageName in settingsPackages) decision.copy(launchRealTarget=false,iconOverrideKey="settings") else decision
                 result += LaunchableApp(identity,effective.labelOverride ?: info.label.toString(),identity.packageName,info.componentName,user,
                     if(effective.iconOverrideKey != null || !effective.launchRealTarget) null else info.getBadgedIcon(context.resources.displayMetrics.densityDpi),effective,private)
             }
