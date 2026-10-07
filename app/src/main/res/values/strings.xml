@@ -123,7 +123,7 @@
     <string name="guide_switch_title">One PIN, one home</string>
     <string name="guide_switch_body">Hold the clock at the top of your home to enter a PIN. Your private PIN opens your private apps and controls. Your alternative PIN opens the ordinary-looking home. Veil PINs do not change your Android screen lock.</string>
     <string name="guide_apps_title">Build a useful alternative home</string>
-    <string name="guide_apps_body">Choose the apps you want in the alternative home. Open an app row, enable Show in this profile, choose its appearance and save. Until you add apps, this home contains Calculator, Notes, Clock and local Settings.</string>
+    <string name="guide_apps_body">Choose the apps you want in the alternative home. Open an app row, enable Allow in this profile, choose its appearance and save. Until you add apps, this home contains Calculator, Notes, Clock and local Settings.</string>
     <string name="guide_identity_title">Choose what each icon does</string>
     <string name="guide_identity_body">Real: original app and icon. Hidden: absent from this Veil home and search. Disguised: another name and utility icon, opening the real app. Decoy: another name and icon, opening a local utility instead. Names and icons change inside Veil only.</string>
     <string name="guide_lock_title">Leave your private environment</string>
