@@ -351,7 +351,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val content=protectedPage(R.string.control) ?: return
         content.addView(VeilUi.text(this,getString(R.string.control_intro),23f).apply { typeface=android.graphics.Typeface.DEFAULT_BOLD })
         content.addView(VeilUi.text(this,getString(R.string.control_intro_body),14f).apply { setTextColor(VeilUi.muted) })
-        val quick=LinearLayout(this)
+        val quick=LinearLayout(this).apply { isBaselineAligned=false;gravity=Gravity.CENTER_VERTICAL }
         quick.addView(VeilUi.button(this,R.string.usage_guide) { showGuide() }.apply { id=R.id.usage_guide },LinearLayout.LayoutParams(0,-2,1f))
         quick.addView(VeilUi.button(this,R.string.open_decoy) { emergency() }.apply { id=R.id.open_decoy },LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,8) })
         content.addView(quick)

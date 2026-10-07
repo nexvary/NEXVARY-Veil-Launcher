@@ -326,6 +326,13 @@ class LauncherFlowTest {
                     onView(withText(R.string.back)).perform(click())
                     onView(withId(R.id.usage_guide)).perform(click())
                     androidx.test.espresso.Espresso.pressBack()
+                    scenario.onActivity {
+                        val button=it.findViewById<android.view.View>(R.id.open_decoy)
+                        val visible=android.graphics.Rect()
+                        Assert.assertTrue("Alternative-home button must be visible after Back",button.getGlobalVisibleRect(visible))
+                        Assert.assertTrue("Multiline button must fit its row",visible.height()>=button.height*0.9f)
+                        capture(it,"control-return-$language")
+                    }
                     onView(withId(R.id.open_decoy)).perform(scrollTo(),click())
                     Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
                     onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
