@@ -84,10 +84,13 @@ object VeilUi {
         addView(row);addView(text(activity,activity.getString(body),14f).apply { setTextColor(muted) })
     }
     fun action(activity: Activity,title: Int,body: Int,drawable: Int,run: () -> Unit): LinearLayout=panel(activity).apply {
-        addView(icon(activity,drawable,32))
-        addView(text(activity,activity.getString(title),15f).apply { typeface=Typeface.DEFAULT_BOLD })
+        val p=dp(activity,12);setPadding(p,p,p,p)
+        val heading=LinearLayout(activity).apply { gravity=Gravity.CENTER_VERTICAL }
+        heading.addView(icon(activity,drawable,28))
+        heading.addView(text(activity,activity.getString(title),14f).apply { typeface=Typeface.DEFAULT_BOLD },LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=dp(activity,8) })
+        addView(heading)
         addView(text(activity,activity.getString(body),12f).apply { setTextColor(muted) })
-        minimumHeight=dp(activity,124);isClickable=true;isFocusable=true
+        minimumHeight=dp(activity,104);isClickable=true;isFocusable=true
         foreground=RippleDrawable(ColorStateList.valueOf(0x336adcc9),null,card())
         setOnClickListener { run() }
     }

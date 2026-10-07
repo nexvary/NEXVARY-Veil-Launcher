@@ -1,4 +1,4 @@
-# Veil alpha03 interaction guide
+# Veil alpha04 interaction guide
 
 The first launch explains the private and ordinary-looking environments before showing any PIN fields. Setup has three steps: private PIN and confirmation, distinct alternative PIN and confirmation, then a review explaining how to return to the private environment and configure apps. The limited PIN is optional. These PINs control Veil only; Android's screen-lock credential is separate.
 
@@ -13,3 +13,9 @@ English and Arabic use resources and locale layout direction. Mathematical keys 
 ## Verification
 
 The alpha03 changes extend the instrumented suite with actual three-step PIN setup, calculator result and clock/stopwatch interaction. The suite publishes rendered welcome/setup, home, control-center and local utility screenshots for visual inspection. GitHub's gate remains responsible for unit tests, lint, APK assembly and emulator tests on Android 14, 15 and 16, plus authenticated force-stop and reboot/re-authentication checks. A release candidate additionally requires physical-device/OEM review and persistent secure signing; passing this UI milestone does not imply that those steps are complete.
+
+## Alpha04 guided controls
+
+The authenticated Control Center now includes **How to use Veil** and **Open alternative home** at its top. The guide explains PIN routing, allowlists, all four presentations, manual/emergency lock and Android system boundaries in English and Arabic. **Choose alternative apps** opens the DECOY app manager directly; there is no need to guess which profile to select. Opening the alternative home ends the private session, clears the current UI via the existing emergency path and requests Private Space locking without claiming an unconfirmed platform result. Returning requires the private PIN. Neither shortcut nor the guide appears in DECOY.
+
+Control cards use smaller horizontal icon/title headings to reduce wasted vertical space. The added instrumented flow opens the guide in both languages, checks RTL and FLAG_SECURE, follows the actual DECOY manager route, exercises both Back paths and verifies the alternative home has no guide or private controls. Alpha04 screenshots and build status must be verified from its own CI run, independently of alpha03.

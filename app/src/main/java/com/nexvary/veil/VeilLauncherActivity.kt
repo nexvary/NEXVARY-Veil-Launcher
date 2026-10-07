@@ -351,6 +351,10 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val content=protectedPage(R.string.control) ?: return
         content.addView(VeilUi.text(this,getString(R.string.control_intro),23f).apply { typeface=android.graphics.Typeface.DEFAULT_BOLD })
         content.addView(VeilUi.text(this,getString(R.string.control_intro_body),14f).apply { setTextColor(VeilUi.muted) })
+        val quick=LinearLayout(this)
+        quick.addView(VeilUi.button(this,R.string.usage_guide) { showGuide() }.apply { id=R.id.usage_guide },LinearLayout.LayoutParams(0,-2,1f))
+        quick.addView(VeilUi.button(this,R.string.open_decoy) { emergency() }.apply { id=R.id.open_decoy },LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,8) })
+        content.addView(quick)
         val actions: List<Pair<Triple<Int,Int,Int>,() -> Unit>> = listOf(
             Triple(R.string.visibility,R.string.visibility_hint,R.drawable.ic_notes) to { secureDialog(AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.privacy),getString(R.string.decoy),getString(R.string.normal))) { _,i -> showApps(listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) }) },
             Triple(R.string.profiles,R.string.profiles_hint,R.drawable.ic_veil) to { showSetup() },
@@ -369,6 +373,15 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             setOnCheckedChangeListener { _,v -> if(session.current()==VeilProfile.PRIVACY) { config.emergencyEnabled=v;save() } } })
         content.addView(VeilUi.button(this,R.string.language) { chooseLanguage() })
         content.addView(VeilUi.primary(this,R.string.lock) { emergency() })
+    }
+    private fun showGuide() {
+        val content=protectedPage(R.string.usage_guide) ?: return
+        content.addView(VeilUi.info(this,R.string.guide_switch_title,R.string.guide_switch_body,R.drawable.ic_veil))
+        content.addView(VeilUi.info(this,R.string.guide_apps_title,R.string.guide_apps_body,R.drawable.ic_notes))
+        content.addView(VeilUi.primary(this,R.string.configure_decoy) { showApps(VeilProfile.DECOY) }.apply { id=R.id.configure_decoy })
+        content.addView(VeilUi.info(this,R.string.guide_identity_title,R.string.guide_identity_body,R.drawable.ic_calculator))
+        content.addView(VeilUi.info(this,R.string.guide_lock_title,R.string.guide_lock_body,R.drawable.ic_clock))
+        content.addView(VeilUi.info(this,R.string.guide_limits_title,R.string.guide_limits_body,R.drawable.ic_settings))
     }
     private fun showPrivate() {
         val content=protectedPage(R.string.private_space) ?: return

@@ -298,6 +298,45 @@ class LauncherFlowTest {
         }
     }
 
+    @Test fun protectedGuideConfiguresDecoyAndLeavesNoPrivateEntryInEnglishAndArabic() {
+        Assume.assumeTrue(android.os.Build.VERSION.SDK_INT>=33)
+        val localeManager=context.getSystemService(android.app.LocaleManager::class.java)
+        val original=localeManager.applicationLocales
+        try {
+            listOf("en","ar").forEach { language ->
+                localeManager.applicationLocales=android.os.LocaleList.forLanguageTags(language)
+                ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+                    onView(withId(R.id.usage_guide)).check(doesNotExist())
+                    onView(withId(R.id.home_clock)).perform(longClick())
+                    onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+                    onView(withText(R.string.unlock)).perform(click())
+                    waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
+                    onView(withText(R.string.control)).perform(click())
+                    scenario.onActivity { capture(it,"control-center-$language") }
+                    onView(withId(R.id.usage_guide)).perform(click())
+                    onView(withText(R.string.guide_switch_title)).check(matches(isDisplayed()))
+                    scenario.onActivity {
+                        Assert.assertTrue(it.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE != 0)
+                        Assert.assertEquals(if(language=="ar") android.view.View.LAYOUT_DIRECTION_RTL else android.view.View.LAYOUT_DIRECTION_LTR,it.findViewById<android.view.ViewGroup>(android.R.id.content).getChildAt(0).layoutDirection)
+                        capture(it,"usage-guide-$language")
+                    }
+                    onView(withId(R.id.configure_decoy)).perform(scrollTo(),click())
+                    onView(withId(R.id.management_search)).check(matches(isDisplayed()))
+                    onView(withText(context.getString(R.string.configure_profile,context.getString(R.string.decoy)))).check(matches(isDisplayed()))
+                    onView(withText(R.string.back)).perform(click())
+                    onView(withId(R.id.usage_guide)).perform(click())
+                    androidx.test.espresso.Espresso.pressBack()
+                    onView(withId(R.id.open_decoy)).perform(click())
+                    Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
+                    onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
+                    onView(withId(R.id.usage_guide)).check(doesNotExist())
+                    onView(withText(R.string.guide_switch_title)).check(doesNotExist())
+                    onView(withText(R.string.control)).check(doesNotExist())
+                }
+            }
+        } finally { localeManager.applicationLocales=original }
+    }
+
     @Test fun appManagementUiSavesDisguiseAndReturnsThroughCenter() {
         val target=com.nexvary.veil.launcher.AppCatalog(context).load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true)
             .groupBy { it.label }.values.first { it.size==1 && !it.single().privateSpace && it.single().packageName!="com.android.settings" }.single()

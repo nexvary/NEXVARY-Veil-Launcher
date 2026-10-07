@@ -1,4 +1,7 @@
 <resources>
+    <item name="usage_guide" type="id" />
+    <item name="open_decoy" type="id" />
+    <item name="configure_decoy" type="id" />
     <item name="home_clock" type="id" />
     <item name="app_search" type="id" />
     <item name="app_grid" type="id" />
