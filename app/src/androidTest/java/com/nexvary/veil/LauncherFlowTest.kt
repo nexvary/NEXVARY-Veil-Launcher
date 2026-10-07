@@ -326,7 +326,7 @@ class LauncherFlowTest {
                     onView(withText(R.string.back)).perform(click())
                     onView(withId(R.id.usage_guide)).perform(click())
                     androidx.test.espresso.Espresso.pressBack()
-                    onView(withId(R.id.open_decoy)).perform(click())
+                    onView(withId(R.id.open_decoy)).perform(scrollTo(),click())
                     Assert.assertEquals(VeilProfile.DECOY,com.nexvary.veil.auth.VeilRuntime.session.current())
                     onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
                     onView(withId(R.id.usage_guide)).check(doesNotExist())

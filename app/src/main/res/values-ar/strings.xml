@@ -18,11 +18,11 @@
     <string name="invalid">تعذر الفتح. تحقق من الرمز أو حاول لاحقًا.</string>
     <string name="pin_invalid">استخدم رموزًا مختلفة من ٦ إلى ١٢ رقمًا وتأكد من تطابق التأكيد.</string>
     <string name="storage_error">الإعدادات غير متاحة والتطبيقات مخفية. يمكنك اختيار لانشر آخر من إعدادات Android؛ إعادة تثبيت Veil تعيد ضبط إعداداته فقط.</string>
-    <string name="profiles">البيئات ورموز الدخول</string>
+    <string name="profiles">البيئات والرموز</string>
     <string name="privacy">خاصة</string>
     <string name="decoy">بديلة</string>
     <string name="normal">محدودة</string>
-    <string name="visibility">ظهور التطبيقات والتمويه</string>
+    <string name="visibility">مظهر التطبيقات</string>
     <string name="real">حقيقي</string>
     <string name="hidden">مخفي</string>
     <string name="disguised">مموه</string>

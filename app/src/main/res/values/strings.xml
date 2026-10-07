@@ -18,11 +18,11 @@
     <string name="invalid">Unable to open. Check your PIN or try again later.</string>
     <string name="pin_invalid">Use distinct PINs of 6–12 digits and matching confirmations.</string>
     <string name="storage_error">Configuration unavailable. Apps remain concealed. Use Android Home settings to choose another launcher; reinstalling Veil resets only its own configuration.</string>
-    <string name="profiles">Profiles and PINs</string>
+    <string name="profiles">Homes and PINs</string>
     <string name="privacy">Private</string>
     <string name="decoy">Alternative</string>
     <string name="normal">Limited</string>
-    <string name="visibility">App visibility and disguises</string>
+    <string name="visibility">App appearance</string>
     <string name="real">Real</string>
     <string name="hidden">Hidden</string>
     <string name="disguised">Disguised</string>
