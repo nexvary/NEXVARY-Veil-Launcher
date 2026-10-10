@@ -1,0 +1,26 @@
+<resources>
+    <item name="usage_guide" type="id" />
+    <item name="open_decoy" type="id" />
+    <item name="configure_decoy" type="id" />
+    <item name="home_clock" type="id" />
+    <item name="app_search" type="id" />
+    <item name="app_grid" type="id" />
+    <item name="note_input" type="id" />
+    <item name="calculator_input" type="id" />
+    <item name="calculator_result" type="id" />
+    <item name="private_pin_input" type="id" />
+    <item name="private_pin_confirm" type="id" />
+    <item name="decoy_pin_input" type="id" />
+    <item name="decoy_pin_confirm" type="id" />
+    <item name="limited_pin_input" type="id" />
+    <item name="limited_pin_confirm" type="id" />
+    <item name="pin_setup_save" type="id" />
+    <item name="wizard_next" type="id" />
+    <item name="management_search" type="id" />
+    <item name="clock_seconds_toggle" type="id" />
+    <item name="presentation_picker" type="id" />
+    <item name="home_dock" type="id"/>
+    <item name="open_drawer" type="id"/>
+    <item name="add_home_shortcut" type="id"/>
+    <item name="add_dock_shortcut" type="id"/>
+</resources>
