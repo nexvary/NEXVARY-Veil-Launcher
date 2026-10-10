@@ -65,6 +65,38 @@ class LauncherFlowTest {
             scenario.onActivity { Assert.assertEquals(0,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
         }
     }
+    @Test fun shortcutEditorPersistsExplicitChoiceAndOrder() {
+        val target=com.nexvary.veil.launcher.AppCatalog(context)
+            .load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true)
+            .groupBy { it.label }.values.first { it.size==1 && !it.single().privateSpace && it.single().packageName!="com.android.settings" }.single()
+        // Explicit test-fixture approval; production never inserts real apps automatically.
+        VeilStore(context).save(VeilStore(context).load().apply { allowlists[VeilProfile.DECOY]=setOf(target.packageName) })
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.home_clock)).perform(longClick())
+            onView(withHint(R.string.pin)).perform(typeText("246810"),closeSoftKeyboard())
+            onView(withText(R.string.unlock)).perform(click())
+            waitFor(scenario) { com.nexvary.veil.auth.VeilRuntime.session.current()==VeilProfile.PRIVACY }
+            onView(withText(R.string.control)).perform(click())
+            onView(withText(R.string.home_layout)).perform(scrollTo(),click())
+            onView(withText(R.string.decoy)).perform(click())
+            onView(withId(R.id.add_home_shortcut)).perform(scrollTo(),click())
+            onView(withText(target.label)).perform(click())
+            val key="app:${target.identity.packageName}|${target.identity.className.orEmpty()}|${target.identity.userSerial}"
+            Assert.assertEquals(key,VeilStore(context).load().homeTiles[VeilProfile.DECOY]?.last())
+            val label=target.label+"  ·  "+context.getString(R.string.edit_shortcut)
+            onView(withText(label)).perform(scrollTo(),click())
+            onView(withText(R.string.move_first)).perform(click())
+            val saved=VeilStore(context).load()
+            Assert.assertEquals(key,saved.homeTiles[VeilProfile.DECOY]?.first())
+            Assert.assertEquals(listOf("utility:notes","utility:clock"),saved.homeTiles[VeilProfile.NORMAL])
+            scenario.onActivity { capture(it,"home-editor-en") }
+            onView(withText(R.string.back)).perform(click())
+            onView(withId(R.id.open_decoy)).perform(scrollTo(),click())
+            onView(withText(target.label)).check(matches(isDisplayed()))
+            scenario.onActivity { capture(it,"explicit-shortcuts-en") }
+            onView(withText(R.string.control)).check(doesNotExist())
+        }
+    }
     @Test fun startsConcealedSearchAndRecreationStayConcealed() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
             onView(withId(R.id.app_grid)).check(matches(isDisplayed()))

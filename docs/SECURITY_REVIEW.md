@@ -8,3 +8,12 @@
 - App clicks re-evaluate current policy and exact component/UserHandle. Private users are excluded while quiet/locked; OS authorization remains required.
 - Residual limitations: wall-clock backoff, in-memory EditText/String copies, third-party recents/notifications, changing launcher, OS Settings, rooted/ADB access. No claim of managed enforcement.
 - Release blockers: physical supported device/private-profile validation; physical OEM process/reboot tests (a real emulator termination/reboot harness now gates CI); release signing identity; broader accessibility and font-scale UI review.
+
+## 0.3.0-alpha01 home/drawer revision
+
+- Saved home and dock entries contain exact component/user identities, inside the existing authenticated encrypted configuration. Older configurations migrate to local tools only; no real DECOY apps are auto-approved.
+- Home and dock intersect their ordered keys with the current policy-filtered catalog. Clicks re-resolve the exact identity and recheck the session. Pinning never grants visibility or launch authority.
+- Shortcut edits remain in the protected center and recheck PRIVACY before mutation. Android Private Space entries remain separate from ordinary pins.
+- Search opens a distinct drawer. Back, emergency and session expiration rebuild the correct home; private labels and queries are not restored from saved instance state.
+- New tests cover drawer controls and gesture, encrypted profile-specific order, hidden pinned identities, and real shortcut selection/reordering via the management UI.
+- Runtime validation for this revision must be recorded after CI; the alpha04 result is not evidence for this code. Permanent signing, physical OEM verification, broader accessibility review, custom icon import and managed enforcement remain outstanding.

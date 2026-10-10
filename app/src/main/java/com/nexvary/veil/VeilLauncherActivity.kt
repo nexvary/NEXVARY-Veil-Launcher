@@ -184,6 +184,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             dock.visibility=if(drawerOpen) View.GONE else View.VISIBLE
             val homeKeys=if(compact) (config.homeTiles[profile].orEmpty()+config.dockTiles[profile].orEmpty()).distinct() else config.homeTiles[profile].orEmpty()
             val visible=if(drawerOpen) entries.distinctBy { it.label.lowercase(java.util.Locale.ROOT) } else homeKeys.mapNotNull { key -> entries.firstOrNull { it.key()==key } }
+            grid.setStackFromBottom(!drawerOpen)
             grid.adapter=TileAdapter(visible)
             empty.visibility=if(visible.isEmpty()) View.VISIBLE else View.GONE
             grid.setOnItemClickListener { _,_,position,_ -> launch(visible[position]) }
@@ -448,8 +449,9 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                 secureDialog(AlertDialog.Builder(this).setTitle(R.string.add_shortcut).setItems(candidates.map { it.label }.toTypedArray()) { _,i ->
                     if(session.current()==VeilProfile.PRIVACY) { target[profile]=keys+candidates[i].key();if(save()) showHomeEditor(profile) } else emergency()
                 })
-            })
+            }.apply { id=if(title==R.string.home_shortcuts) R.id.add_home_shortcut else R.id.add_dock_shortcut })
         }
+        content.addView(VeilUi.button(this,R.string.configure_decoy) { showApps(profile) }.apply { setText(R.string.visibility) })
         section(R.string.home_shortcuts,config.homeTiles,64)
         section(R.string.dock_shortcuts,config.dockTiles,4)
     }

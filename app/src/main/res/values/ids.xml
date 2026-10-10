@@ -21,4 +21,6 @@
     <item name="presentation_picker" type="id" />
     <item name="home_dock" type="id"/>
     <item name="open_drawer" type="id"/>
+    <item name="add_home_shortcut" type="id"/>
+    <item name="add_dock_shortcut" type="id"/>
 </resources>

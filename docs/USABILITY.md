@@ -19,3 +19,20 @@ The alpha03 changes extend the instrumented suite with actual three-step PIN set
 The authenticated Control Center now includes **How to use Veil** and **Open alternative home** at its top. The guide explains PIN routing, allowlists, all four presentations, manual/emergency lock and Android system boundaries in English and Arabic. **Choose alternative apps** opens the DECOY app manager directly; there is no need to guess which profile to select. Opening the alternative home ends the private session, clears the current UI via the existing emergency path and requests Private Space locking without claiming an unconfirmed platform result. Returning requires the private PIN. Neither shortcut nor the guide appears in DECOY.
 
 Control cards use smaller horizontal icon/title headings to reduce wasted vertical space. The added instrumented flow opens the guide in both languages, checks RTL and FLAG_SECURE, follows the actual DECOY manager route, exercises both Back paths and verifies the alternative home has no guide or private controls. Alpha04 screenshots and build status must be verified from its own CI run, independently of alpha03.
+
+## 0.3.0-alpha01 navigation
+
+Swipe up or tap All apps to open the searchable drawer. In-app Back and system
+Back return to home. Home shortcuts sit above the dock rather than at the top of
+an otherwise empty application catalog. In landscape, home and dock shortcuts
+share the scrollable grid to preserve vertical space.
+
+In the protected center, Home and dock selects an environment. Add an already
+approved app or a local tool, move an entry first, or remove its shortcut without
+uninstalling the app. Real apps in DECOY/NORMAL require explicit approval through
+app visibility management. The editor links directly to that management page.
+The dock holds four entries. Existing settings migrate without auto-selecting
+real apps. Wallpaper has three locally drawn options.
+
+Instrumentation screenshots use disposable emulator data. Physical OPPO behavior
+and final visual acceptance remain separate from successful emulator tests.
