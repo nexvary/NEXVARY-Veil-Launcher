@@ -115,7 +115,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val root=VeilUi.root(this,profile!=VeilProfile.DECOY)
         root.background=HomeBackdrop(config.wallpaper)
         val clock=TextClock(this).apply {
-            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE) 24f else 56f; gravity=Gravity.CENTER; setTextColor(VeilUi.silver); id=R.id.home_clock
+            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=if(compact) 24f else (resources.configuration.screenWidthDp/(7f*resources.configuration.fontScale)).coerceIn(24f,56f); gravity=Gravity.CENTER; setTextColor(VeilUi.silver); id=R.id.home_clock
             setOnLongClickListener { if(!storageFailed) { if(config.pins.isEmpty()) showSetup() else showPin() }; true }
         }
         val search=EditText(this).apply { VeilUi.input(this@VeilLauncherActivity,this); id=R.id.app_search; isSaveEnabled=false; setHint(R.string.search); isSingleLine=true
@@ -134,7 +134,12 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             root.addView(search)
 
         }
-        val drawerHeader=VeilUi.button(this,R.string.back) { showLauncher() }.apply { visibility=if(drawerOpen) View.VISIBLE else View.GONE }
+        val drawerHeader=LinearLayout(this).apply {
+            gravity=Gravity.CENTER_VERTICAL
+            visibility=if(drawerOpen) View.VISIBLE else View.GONE
+            addView(VeilUi.button(this@VeilLauncherActivity,R.string.back) { showLauncher() },LinearLayout.LayoutParams(-2,-2))
+            addView(VeilUi.text(this@VeilLauncherActivity,getString(R.string.apps),20f),LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,12) })
+        }
         root.addView(drawerHeader)
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
         val empty=VeilUi.text(this,getString(R.string.no_results),15f).apply { gravity=Gravity.CENTER;visibility=View.GONE }
@@ -149,7 +154,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         val snapshot=if(storageFailed) emptyList() else catalog.load(config.policy(profile))
         val dock=GridView(this).apply {
             id=R.id.home_dock; numColumns=2; stretchMode=GridView.STRETCH_COLUMN_WIDTH
-            background=VeilUi.card()
+            background=VeilUi.card();selector=android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
         }
         root.addView(dock,LinearLayout.LayoutParams(-1,VeilUi.dp(this,(112*resources.configuration.fontScale).toInt())))
         val drawerButton=VeilUi.button(this,R.string.all_apps) { showLauncher(true) }.apply { id=R.id.open_drawer }
@@ -184,6 +189,8 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             dock.visibility=if(drawerOpen) View.GONE else View.VISIBLE
             val homeKeys=if(compact) (config.homeTiles[profile].orEmpty()+config.dockTiles[profile].orEmpty()).distinct() else config.homeTiles[profile].orEmpty()
             val visible=if(drawerOpen) entries.distinctBy { it.label.lowercase(java.util.Locale.ROOT) } else homeKeys.mapNotNull { key -> entries.firstOrNull { it.key()==key } }
+            val columns=((resources.configuration.screenWidthDp-40)/(66*resources.configuration.fontScale.coerceAtLeast(1f))).toInt().coerceAtLeast(1)
+            grid.numColumns=if(drawerOpen) GridView.AUTO_FIT else visible.size.coerceAtLeast(1).coerceAtMost(columns)
             grid.setStackFromBottom(!drawerOpen)
             grid.adapter=TileAdapter(visible)
             empty.visibility=if(visible.isEmpty()) View.VISIBLE else View.GONE
@@ -441,7 +448,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                             if(save()) showHomeEditor(profile)
                         } else emergency()
                     })
-                }.apply { text=tile.label+"  ·  "+getString(R.string.edit_shortcut) })
+                }.apply { text=getString(R.string.shortcut_edit_label,tile.label) })
             }
             content.addView(VeilUi.button(this,R.string.add_shortcut) {
                 val candidates=available.filter { it.key() !in keys }

@@ -83,7 +83,7 @@ class LauncherFlowTest {
             onView(withText(target.label)).perform(click())
             val key="app:${target.identity.packageName}|${target.identity.className.orEmpty()}|${target.identity.userSerial}"
             Assert.assertEquals(key,VeilStore(context).load().homeTiles[VeilProfile.DECOY]?.last())
-            val label=target.label+"  ·  "+context.getString(R.string.edit_shortcut)
+            val label=context.getString(R.string.shortcut_edit_label,target.label)
             onView(withText(label)).perform(scrollTo(),click())
             onView(withText(R.string.move_first)).perform(click())
             val saved=VeilStore(context).load()
@@ -96,6 +96,42 @@ class LauncherFlowTest {
             scenario.onActivity { capture(it,"explicit-shortcuts-en") }
             onView(withText(R.string.control)).check(doesNotExist())
         }
+    }
+    @Test fun wallpaperRemainsOpaqueAcrossRepeatedDraws() {
+        val background=HomeBackdrop(0).apply { setBounds(0,0,320,640) }
+        val first=android.graphics.Bitmap.createBitmap(320,640,android.graphics.Bitmap.Config.ARGB_8888)
+        val second=android.graphics.Bitmap.createBitmap(320,640,android.graphics.Bitmap.Config.ARGB_8888)
+        try {
+            background.draw(android.graphics.Canvas(first))
+            background.draw(android.graphics.Canvas(second))
+            Assert.assertEquals(255,android.graphics.Color.alpha(second.getPixel(100,100)))
+            Assert.assertTrue("Wallpaper must not fade on subsequent clock redraws",first.sameAs(second))
+        } finally { first.recycle();second.recycle() }
+    }
+    @Test fun explicitlyApprovedAppsRenderArabicHomeAndDrawer() {
+        val localeManager=context.getSystemService(android.app.LocaleManager::class.java)
+        val original=localeManager.applicationLocales
+        try {
+            localeManager.applicationLocales=android.os.LocaleList.forLanguageTags("ar")
+            val catalog=com.nexvary.veil.launcher.AppCatalog(context)
+            val preferred=setOf("com.android.camera2","com.android.contacts","com.android.dialer","com.android.calendar","com.android.documentsui","com.android.messaging","com.google.android.apps.maps","com.android.chrome","com.android.gallery3d")
+            val apps=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true)
+                .filter { !it.privateSpace && it.packageName in preferred }.distinctBy { it.identity }.take(6)
+            Assert.assertTrue("Emulator must contain real apps for visual coverage",apps.isNotEmpty())
+            // Explicit disposable-fixture choices, never production auto-selection.
+            VeilStore(context).save(VeilStore(context).load().apply {
+                allowlists[VeilProfile.DECOY]=apps.map { "${it.packageName}|${it.identity.userSerial}" }.toSet()
+                homeTiles[VeilProfile.DECOY]=apps.map { "app:${it.identity.packageName}|${it.identity.className.orEmpty()}|${it.identity.userSerial}" }+listOf("utility:notes","utility:clock")
+            })
+            ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+                onView(withId(R.id.home_dock)).check(matches(isDisplayed()))
+                scenario.onActivity { capture(it,"configured-home-ar") }
+                onView(withId(R.id.open_drawer)).perform(click())
+                onView(withText(R.string.back)).check(matches(isDisplayed()))
+                scenario.onActivity { capture(it,"configured-drawer-ar") }
+                onView(withText(R.string.control)).check(doesNotExist())
+            }
+        } finally { localeManager.applicationLocales=original }
     }
     @Test fun startsConcealedSearchAndRecreationStayConcealed() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
