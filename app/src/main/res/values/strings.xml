@@ -130,4 +130,18 @@
     <string name="guide_lock_body">Open alternative home or Lock Veil ends your private session. Hold home search for Emergency Veil when enabled. To return, hold the home clock and enter your private PIN. Restarting or recreating Veil returns to the alternative home.</string>
     <string name="guide_limits_title">Know the protection boundary</string>
     <string name="guide_limits_body">Alternative Settings opens local ordinary controls. Android Settings, notifications, recent apps and other system screens remain accessible outside Veil in Standard mode. Private Space provides stronger separation on supported devices after Android setup.</string>
+    <string name="all_apps">All apps · Swipe up</string>
+    <string name="home_layout">Home and dock</string>
+    <string name="home_layout_help">Add approved apps to each home independently. Tap a shortcut to move it first or remove it. The dock holds up to four items. Removing a shortcut does not uninstall an app.</string>
+    <string name="home_shortcuts">Home shortcuts</string>
+    <string name="dock_shortcuts">Dock shortcuts</string>
+    <string name="edit_shortcut">Edit</string>
+    <string name="add_shortcut">Add shortcut</string>
+    <string name="move_first">Move to first</string>
+    <string name="remove_shortcut">Remove shortcut</string>
+    <string name="dock_full">The dock holds four shortcuts. Remove one first.</string>
+    <string name="home_wallpaper">Wallpaper</string>
+    <string name="wallpaper_ocean">Ocean</string>
+    <string name="wallpaper_dusk">Dusk</string>
+    <string name="wallpaper_graphite">Graphite</string>
 </resources>

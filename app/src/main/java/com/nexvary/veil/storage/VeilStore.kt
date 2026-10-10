@@ -20,6 +20,10 @@ class VeilConfig {
     var pins = listOf<PinProfileBinding>()
     var rules = listOf<DisguiseRule>()
     var allowlists = VeilProfile.entries.associateWith { emptySet<String>() }.toMutableMap()
+    // Old configurations migrate to local tools, never real apps.
+    var homeTiles = VeilProfile.entries.associateWith { listOf("utility:notes", "utility:clock") }.toMutableMap()
+    var dockTiles = VeilProfile.entries.associateWith { listOf("utility:calculator", "utility:settings") }.toMutableMap()
+    var wallpaper = 0
     var timeout = 300_000L
     var failures = 0
     var blockedUntil = 0L
@@ -66,6 +70,15 @@ class VeilStore(context: Context) {
                     val list = json.getJSONArray(profile.name)
                     allowlists[profile] = (0 until list.length()).map { list.getString(it) }.toSet()
                 }
+                VeilProfile.entries.forEach { profile ->
+                    fun readTiles(prefix: String, fallback: List<String>): List<String> {
+                        val items = json.optJSONArray(prefix + profile.name) ?: return fallback
+                        return (0 until items.length()).map { items.getString(it) }.distinct().take(64)
+                    }
+                    homeTiles[profile] = readTiles("home:", homeTiles[profile].orEmpty())
+                    dockTiles[profile] = readTiles("dock:", dockTiles[profile].orEmpty()).take(4)
+                }
+                wallpaper = json.optInt("wallpaper", 0).coerceIn(0, 2)
                 timeout = json.getLong("timeout").also { require(it in 30_000..3_600_000) }
                 failures = json.getInt("failures").coerceAtLeast(0)
                 blockedUntil = json.getLong("blockedUntil")
@@ -85,6 +98,11 @@ class VeilStore(context: Context) {
                 .put("label",rule.decoyLabel ?: "").put("icon",rule.decoyIconKey ?: "").put("profile",profile.name))
         } } })
         VeilProfile.entries.forEach { json.put(it.name,JSONArray(config.allowlists[it].orEmpty().toList())) }
+        VeilProfile.entries.forEach {
+            json.put("home:" + it.name, JSONArray(config.homeTiles[it].orEmpty()))
+            json.put("dock:" + it.name, JSONArray(config.dockTiles[it].orEmpty()))
+        }
+        json.put("wallpaper", config.wallpaper)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE,key())
         val plain = json.toString().toByteArray()

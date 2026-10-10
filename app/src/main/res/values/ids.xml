@@ -19,4 +19,6 @@
     <item name="management_search" type="id" />
     <item name="clock_seconds_toggle" type="id" />
     <item name="presentation_picker" type="id" />
+    <item name="home_dock" type="id"/>
+    <item name="open_drawer" type="id"/>
 </resources>

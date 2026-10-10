@@ -130,4 +130,18 @@
     <string name="guide_lock_body">فتح البيئة البديلة أو قفل Veil ينهي جلستك الخاصة. اضغط مطولًا على البحث الرئيسي لتفعيل وضع الطوارئ إذا كان مفعّلًا. للعودة، اضغط مطولًا على الساعة الرئيسية وأدخل رمزك الخاص. إعادة تشغيل Veil أو إعادة إنشاء شاشته تعيدك إلى البيئة البديلة.</string>
     <string name="guide_limits_title">اعرف حدود الحماية</string>
     <string name="guide_limits_body">الإعدادات البديلة تعرض عناصر تحكم محلية عادية. إعدادات أندرويد والإشعارات والتطبيقات الأخيرة وشاشات النظام الأخرى تظل متاحة خارج Veil في الوضع العادي. المساحة الخاصة توفر فصلًا أقوى على الأجهزة المدعومة بعد إعدادها في أندرويد.</string>
+    <string name="all_apps">كل التطبيقات · اسحب لأعلى</string>
+    <string name="home_layout">الرئيسية وشريط الاختصارات</string>
+    <string name="home_layout_help">أضف التطبيقات المسموح بها لكل بيئة بشكل مستقل. اضغط الاختصار لنقله إلى البداية أو إزالته. الشريط يسع أربعة اختصارات. إزالة الاختصار لا تحذف التطبيق.</string>
+    <string name="home_shortcuts">اختصارات الرئيسية</string>
+    <string name="dock_shortcuts">اختصارات الشريط السفلي</string>
+    <string name="edit_shortcut">تعديل</string>
+    <string name="add_shortcut">إضافة اختصار</string>
+    <string name="move_first">نقل إلى البداية</string>
+    <string name="remove_shortcut">إزالة الاختصار</string>
+    <string name="dock_full">الشريط يسع أربعة اختصارات. أزل أحدها أولًا.</string>
+    <string name="home_wallpaper">الخلفية</string>
+    <string name="wallpaper_ocean">المحيط</string>
+    <string name="wallpaper_dusk">الغسق</string>
+    <string name="wallpaper_graphite">الجرافيت</string>
 </resources>

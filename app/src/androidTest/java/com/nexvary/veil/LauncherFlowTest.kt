@@ -30,6 +30,41 @@ class LauncherFlowTest {
         com.nexvary.veil.auth.VeilRuntime.session.lock()
         VeilStore(context).save(VeilConfig().apply { pins=listOf(PinProfileResolver.bind("246810".toCharArray(),VeilProfile.PRIVACY),PinProfileResolver.bind("135790".toCharArray(),VeilProfile.DECOY)) })
     }
+    @Test fun drawerGestureButtonAndBackPreserveConcealment() {
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.open_drawer)).perform(click())
+            scenario.onActivity { Assert.assertEquals(4,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count);capture(it,"drawer-en") }
+            onView(withText(R.string.back)).perform(click())
+            onView(withId(R.id.open_drawer)).check(matches(isDisplayed()))
+            onView(withId(R.id.app_grid)).perform(swipeUp())
+            onView(withText(R.string.back)).check(matches(isDisplayed()))
+            androidx.test.espresso.Espresso.pressBack()
+            onView(withId(R.id.home_dock)).check(matches(isDisplayed()))
+            scenario.onActivity { capture(it,"home-en") }
+            onView(withText(R.string.control)).check(doesNotExist())
+        }
+    }
+    @Test fun encryptedHomeOrderIsIndependentAndHiddenPinnedAppsStayExcluded() {
+        val catalog=com.nexvary.veil.launcher.AppCatalog(context)
+        val target=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true).first { !it.privateSpace }
+        val key="app:${target.identity.packageName}|${target.identity.className.orEmpty()}|${target.identity.userSerial}"
+        val cfg=VeilStore(context).load().apply {
+            homeTiles[VeilProfile.DECOY]=listOf(key,"utility:clock","utility:notes")
+            homeTiles[VeilProfile.NORMAL]=listOf("utility:notes")
+            allowlists[VeilProfile.DECOY]=setOf(target.packageName)
+            rules=listOf(com.nexvary.veil.core.DisguiseRule(target.identity,com.nexvary.veil.core.VeilPresentation.HIDDEN,profiles=setOf(VeilProfile.DECOY)))
+        }
+        VeilStore(context).save(cfg)
+        val restored=VeilStore(context).load()
+        Assert.assertEquals(cfg.homeTiles,restored.homeTiles)
+        Assert.assertEquals(cfg.dockTiles,restored.dockTiles)
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            scenario.onActivity { Assert.assertEquals(2,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+            onView(withId(R.id.open_drawer)).perform(click())
+            onView(withId(R.id.app_search)).perform(typeText("unlikely-hidden-query"),closeSoftKeyboard())
+            scenario.onActivity { Assert.assertEquals(0,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+        }
+    }
     @Test fun startsConcealedSearchAndRecreationStayConcealed() {
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
             onView(withId(R.id.app_grid)).check(matches(isDisplayed()))
@@ -61,10 +96,10 @@ class LauncherFlowTest {
         bytes[bytes.lastIndex]=(bytes.last().toInt() xor 1).toByte(); file.writeBytes(bytes)
         Assert.assertThrows(Exception::class.java) { VeilStore(context).load() }
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
-            scenario.onActivity { Assert.assertEquals(4,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+            scenario.onActivity { Assert.assertEquals(2,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
             onView(withText(R.string.control)).check(doesNotExist())
             scenario.recreate()
-            scenario.onActivity { Assert.assertEquals(4,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+            scenario.onActivity { Assert.assertEquals(2,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
             Assert.assertArrayEquals(bytes,file.readBytes())
         }
     }
@@ -206,6 +241,7 @@ class LauncherFlowTest {
         }
         VeilStore(context).save(config)
         ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            onView(withId(R.id.open_drawer)).perform(click())
             onView(withText("Daily Notes")).perform(click())
             onView(withHint(R.string.note_hint)).check(matches(isDisplayed()))
             onView(withText(R.string.back)).perform(click())

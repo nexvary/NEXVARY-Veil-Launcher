@@ -27,6 +27,20 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private var config = VeilConfig()
     private var storageFailed=false
     private var privateLockConfirmed: Boolean?=null
+    private var drawerOpen=false
+    private var touchX=0f
+    private var touchY=0f
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
+        if(event.actionMasked==android.view.MotionEvent.ACTION_DOWN) { touchX=event.x; touchY=event.y }
+        if(event.actionMasked==android.view.MotionEvent.ACTION_UP && page=="home" && !drawerOpen && config.pins.isNotEmpty() && dialog?.isShowing!=true) {
+            val dy=event.y-touchY
+            if(dy < -VeilUi.dp(this,80) && kotlin.math.abs(event.x-touchX)<kotlin.math.abs(dy)/2) {
+                val cancel=android.view.MotionEvent.obtain(event).apply { action=android.view.MotionEvent.ACTION_CANCEL }
+                super.dispatchTouchEvent(cancel);cancel.recycle();showLauncher(true);return true
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
     private var page="home"
     private var renderedProfile=VeilProfile.DECOY
     private var authBusy=false
@@ -90,20 +104,24 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         showLauncher()
         // Unconfirmed platform lock is reported only inside the authenticated center.
     }
-    private fun showLauncher() {
-        page="home"; backAction=null
+    private fun showLauncher(openDrawer: Boolean=false) {
+        drawerOpen=openDrawer
+        page="home"; backAction=if(openDrawer) ({ showLauncher() }) else null
         wizardFields.forEach { it.text.clear() }; wizardFields=emptyList()
         val profile=session.current()
         renderedProfile=profile
         if(config.pins.isEmpty() && !storageFailed) { showWelcome(); return }
+        val compact=resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE
         val root=VeilUi.root(this,profile!=VeilProfile.DECOY)
+        root.background=HomeBackdrop(config.wallpaper)
         val clock=TextClock(this).apply {
-            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE) 24f else 34f; gravity=Gravity.CENTER; setTextColor(VeilUi.silver); id=R.id.home_clock
+            format24Hour="HH:mm"; format12Hour="hh:mm a"; textSize=if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE) 24f else 56f; gravity=Gravity.CENTER; setTextColor(VeilUi.silver); id=R.id.home_clock
             setOnLongClickListener { if(!storageFailed) { if(config.pins.isEmpty()) showSetup() else showPin() }; true }
         }
         val search=EditText(this).apply { VeilUi.input(this@VeilLauncherActivity,this); id=R.id.app_search; isSaveEnabled=false; setHint(R.string.search); isSingleLine=true
             setOnLongClickListener { if(config.emergencyEnabled) emergency(); true } }
-        if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+        var date: TextClock?=null
+        if(compact) {
             root.addView(LinearLayout(this).apply {
                 gravity=Gravity.CENTER_VERTICAL
                 addView(clock,LinearLayout.LayoutParams(-2,-2))
@@ -111,10 +129,13 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             })
         } else {
             root.addView(clock)
-            root.addView(TextClock(this).apply { format24Hour="EEE, d MMM"; format12Hour=format24Hour; textSize=14f; setTextColor(VeilUi.muted); gravity=Gravity.CENTER; setPadding(0,0,0,VeilUi.dp(this@VeilLauncherActivity,14)) })
+            date=TextClock(this).apply { format24Hour="EEE, d MMM"; format12Hour=format24Hour; textSize=14f; setTextColor(VeilUi.muted); gravity=Gravity.CENTER; setPadding(0,0,0,VeilUi.dp(this@VeilLauncherActivity,14)) }
+            root.addView(date)
             root.addView(search)
-            root.addView(VeilUi.text(this,getString(R.string.apps),14f).apply { setTextColor(VeilUi.muted) })
+
         }
+        val drawerHeader=VeilUi.button(this,R.string.back) { showLauncher() }.apply { visibility=if(drawerOpen) View.VISIBLE else View.GONE }
+        root.addView(drawerHeader)
         if(storageFailed) root.addView(VeilUi.text(this,getString(R.string.storage_error)))
         val empty=VeilUi.text(this,getString(R.string.no_results),15f).apply { gravity=Gravity.CENTER;visibility=View.GONE }
         root.addView(empty)
@@ -126,6 +147,24 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         root.addView(grid,LinearLayout.LayoutParams(-1,0,1f))
         // Filter one policy-checked snapshot while typing. Resume/profile broadcasts rebuild it.
         val snapshot=if(storageFailed) emptyList() else catalog.load(config.policy(profile))
+        val dock=GridView(this).apply {
+            id=R.id.home_dock; numColumns=2; stretchMode=GridView.STRETCH_COLUMN_WIDTH
+            background=VeilUi.card()
+        }
+        root.addView(dock,LinearLayout.LayoutParams(-1,VeilUi.dp(this,(112*resources.configuration.fontScale).toInt())))
+        val drawerButton=VeilUi.button(this,R.string.all_apps) { showLauncher(true) }.apply { id=R.id.open_drawer }
+        root.addView(drawerButton)
+        fun launch(tile: Tile) {
+            val current=session.current()
+            if(current!=profile) { emergency();return }
+            if(tile.app!=null) {
+                val fresh=catalog.load(config.policy(current)).firstOrNull { it.identity==tile.app.identity }
+                if(session.current()!=current) { emergency();return }
+                if(fresh==null) { showLauncher();return }
+                if(fresh.decision.launchRealTarget) { if(!catalog.launch(fresh)) toast(R.string.launch_failed) }
+                else if(fresh.decision.iconOverrideKey=="settings") settings() else utility(fresh.decision.iconOverrideKey ?: "calculator")
+            } else if(tile.utility=="settings") settings() else utility(tile.utility ?: "calculator")
+        }
         fun render(query: String) {
             val current=session.current()
             if(current!=profile) { emergency(); return }
@@ -133,28 +172,26 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             val entries=apps.filter { it.label.contains(query,true) }.map { Tile(it.label,it) }.toMutableList()
             listOf(R.string.calculator to "calculator",R.string.notes to "notes",R.string.clock to "clock",R.string.settings to "settings").forEach { (id,key) ->
                 val label=getString(id)
-                // A configured app/decoy with this label already provides the tile.
-                // Avoid duplicate Settings/Calculator/Clock entries in a convincing profile.
-                if(label.contains(query,true) && entries.none { it.label.equals(label,true) }) entries+=Tile(label,utility=key)
+                // Keep local identities stable even if a real app has the same label.
+                if(label.contains(query,true)) entries+=Tile(label,utility=key)
             }
-            grid.adapter=TileAdapter(entries)
-            empty.visibility=if(entries.isEmpty()) View.VISIBLE else View.GONE
-            grid.setOnItemClickListener { _,_,position,_ ->
-                val tile=entries[position]
-                if(tile.app!=null) {
-                    // Re-resolve against the current policy at click time to close stale-view races.
-                    val clickProfile=session.current()
-                    if(clickProfile!=profile) { emergency(); return@setOnItemClickListener }
-                    val fresh=catalog.load(config.policy(clickProfile)).firstOrNull { it.identity==tile.app.identity }
-                    if(session.current()!=clickProfile) { emergency(); return@setOnItemClickListener }
-                    if(fresh!=null) {
-                        if(!fresh.decision.launchRealTarget) {
-                            val key=fresh.decision.iconOverrideKey ?: "calculator"
-                            if(key=="settings") settings() else utility(key)
-                        } else if(!catalog.launch(fresh)) toast(R.string.launch_failed)
-                    } else showLauncher()
-                } else if(tile.utility=="settings") settings() else utility(tile.utility ?: "calculator")
-            }
+            if(query.isNotEmpty()) drawerOpen=true
+            backAction=if(drawerOpen) ({ showLauncher() }) else null
+            clock.visibility=if(drawerOpen) View.GONE else View.VISIBLE
+            date?.visibility=if(drawerOpen) View.GONE else View.VISIBLE
+            drawerHeader.visibility=if(drawerOpen) View.VISIBLE else View.GONE
+            drawerButton.visibility=if(drawerOpen) View.GONE else View.VISIBLE
+            dock.visibility=if(drawerOpen) View.GONE else View.VISIBLE
+            val homeKeys=if(compact) (config.homeTiles[profile].orEmpty()+config.dockTiles[profile].orEmpty()).distinct() else config.homeTiles[profile].orEmpty()
+            val visible=if(drawerOpen) entries.distinctBy { it.label.lowercase(java.util.Locale.ROOT) } else homeKeys.mapNotNull { key -> entries.firstOrNull { it.key()==key } }
+            grid.adapter=TileAdapter(visible)
+            empty.visibility=if(visible.isEmpty()) View.VISIBLE else View.GONE
+            grid.setOnItemClickListener { _,_,position,_ -> launch(visible[position]) }
+            val dockEntries=config.dockTiles[profile].orEmpty().mapNotNull { key -> entries.firstOrNull { it.key()==key } }
+            dock.numColumns=dockEntries.size.coerceAtLeast(1)
+            dock.adapter=TileAdapter(dockEntries)
+            if(dockEntries.isEmpty() || compact) dock.visibility=View.GONE
+            dock.setOnItemClickListener { _,_,position,_ -> launch(dockEntries[position]) }
         }
         render(""); search.addTextChangedListener(SimpleTextWatcher { render(it) })
         if(profile==VeilProfile.PRIVACY && !config.hidePrivate && !storageFailed) {
@@ -190,7 +227,9 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             row.addView(VeilUi.button(this,R.string.lock) { emergency() },LinearLayout.LayoutParams(0,-2,1f)); root.addView(row)
         }
     }
-    private data class Tile(val label: String,val app: LaunchableApp?=null,val utility: String?=null)
+    private data class Tile(val label: String,val app: LaunchableApp?=null,val utility: String?=null) {
+        fun key()=app?.identity?.let { "app:${it.packageName}|${it.className.orEmpty()}|${it.userSerial}" } ?: "utility:$utility"
+    }
     private fun tileColumnWidth() = VeilUi.dp(this,(66*resources.configuration.fontScale.coerceAtLeast(1f)).toInt())
     private inner class TileAdapter(private val items: List<Tile>): BaseAdapter() {
         override fun getCount()=items.size
@@ -355,6 +394,16 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         quick.addView(VeilUi.button(this,R.string.usage_guide) { showGuide() }.apply { id=R.id.usage_guide },LinearLayout.LayoutParams(0,-2,1f))
         quick.addView(VeilUi.button(this,R.string.open_decoy) { emergency() }.apply { id=R.id.open_decoy },LinearLayout.LayoutParams(0,-2,1f).apply { marginStart=VeilUi.dp(this@VeilLauncherActivity,8) })
         content.addView(quick)
+        content.addView(VeilUi.button(this,R.string.home_layout) {
+            secureDialog(AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.privacy),getString(R.string.decoy),getString(R.string.normal))) { _,i ->
+                showHomeEditor(listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i])
+            })
+        })
+        content.addView(VeilUi.button(this,R.string.home_wallpaper) {
+            secureDialog(AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.wallpaper_ocean),getString(R.string.wallpaper_dusk),getString(R.string.wallpaper_graphite))) { _,i ->
+                if(session.current()==VeilProfile.PRIVACY) { config.wallpaper=i;save() } else emergency()
+            })
+        })
         val actions: List<Pair<Triple<Int,Int,Int>,() -> Unit>> = listOf(
             Triple(R.string.visibility,R.string.visibility_hint,R.drawable.ic_notes) to { secureDialog(AlertDialog.Builder(this).setItems(arrayOf(getString(R.string.privacy),getString(R.string.decoy),getString(R.string.normal))) { _,i -> showApps(listOf(VeilProfile.PRIVACY,VeilProfile.DECOY,VeilProfile.NORMAL)[i]) }) },
             Triple(R.string.profiles,R.string.profiles_hint,R.drawable.ic_veil) to { showSetup() },
@@ -373,6 +422,36 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             setOnCheckedChangeListener { _,v -> if(session.current()==VeilProfile.PRIVACY) { config.emergencyEnabled=v;save() } } })
         content.addView(VeilUi.button(this,R.string.language) { chooseLanguage() })
         content.addView(VeilUi.primary(this,R.string.lock) { emergency() })
+    }
+    private fun showHomeEditor(profile: VeilProfile) {
+        val content=protectedPage(R.string.home_layout) ?: return
+        content.addView(VeilUi.text(this,getString(R.string.configure_profile,getString(when(profile) { VeilProfile.PRIVACY -> R.string.privacy;VeilProfile.DECOY -> R.string.decoy;else -> R.string.normal })),20f))
+        content.addView(VeilUi.text(this,getString(R.string.home_layout_help),14f))
+        val available=catalog.load(config.policy(profile)).map { Tile(it.label,it) }.toMutableList()
+        listOf(R.string.calculator to "calculator",R.string.notes to "notes",R.string.clock to "clock",R.string.settings to "settings").forEach { (label,key) -> available+=Tile(getString(label),utility=key) }
+        fun section(title: Int, target: MutableMap<VeilProfile,List<String>>, limit: Int) {
+            content.addView(VeilUi.text(this,getString(title),20f))
+            val keys=target[profile].orEmpty().filter { key -> available.any { it.key()==key } }
+            keys.mapNotNull { key -> available.firstOrNull { it.key()==key } }.forEach { tile ->
+                content.addView(VeilUi.button(this,R.string.edit_shortcut) {
+                    secureDialog(AlertDialog.Builder(this).setTitle(tile.label).setItems(arrayOf(getString(R.string.move_first),getString(R.string.remove_shortcut))) { _,action ->
+                        if(session.current()==VeilProfile.PRIVACY) {
+                            target[profile]=if(action==0) listOf(tile.key())+(keys-tile.key()) else keys-tile.key()
+                            if(save()) showHomeEditor(profile)
+                        } else emergency()
+                    })
+                }.apply { text=tile.label+"  ·  "+getString(R.string.edit_shortcut) })
+            }
+            content.addView(VeilUi.button(this,R.string.add_shortcut) {
+                val candidates=available.filter { it.key() !in keys }
+                if(keys.size>=limit) { toast(R.string.dock_full);return@button }
+                secureDialog(AlertDialog.Builder(this).setTitle(R.string.add_shortcut).setItems(candidates.map { it.label }.toTypedArray()) { _,i ->
+                    if(session.current()==VeilProfile.PRIVACY) { target[profile]=keys+candidates[i].key();if(save()) showHomeEditor(profile) } else emergency()
+                })
+            })
+        }
+        section(R.string.home_shortcuts,config.homeTiles,64)
+        section(R.string.dock_shortcuts,config.dockTiles,4)
     }
     private fun showGuide() {
         val content=protectedPage(R.string.usage_guide) ?: return
