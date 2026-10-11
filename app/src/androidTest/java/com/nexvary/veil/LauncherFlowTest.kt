@@ -44,6 +44,29 @@ class LauncherFlowTest {
             onView(withText(R.string.control)).check(doesNotExist())
         }
     }
+    @Test fun packageRefreshPreservesClockPinDialogAndSearch() {
+        ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
+            fun refresh() {
+                scenario.onActivity {
+                    val clock=it.findViewById<android.widget.TextClock>(R.id.home_clock)
+                    val field=VeilLauncherActivity::class.java.getDeclaredField("catalogCallback").apply { isAccessible=true }
+                    val callback=field.get(it) as android.content.pm.LauncherApps.Callback
+                    callback.onPackageChanged("com.android.settings",android.os.Process.myUserHandle())
+                    Assert.assertSame("Package refresh must not replace the clock during interaction",clock,it.findViewById(R.id.home_clock))
+                }
+            }
+            refresh()
+            onView(withId(R.id.home_clock)).perform(longClick())
+            refresh()
+            onView(withHint(R.string.pin)).check(matches(isDisplayed()))
+            onView(withText(R.string.cancel)).perform(click())
+            onView(withId(R.id.app_search)).perform(typeText("Notes"),closeSoftKeyboard())
+            refresh()
+            onView(withId(R.id.app_search)).check(matches(withText("Notes")))
+            onView(withText(R.string.back)).check(matches(isDisplayed()))
+            scenario.onActivity { Assert.assertEquals(1,it.findViewById<android.widget.GridView>(R.id.app_grid).adapter.count) }
+        }
+    }
     @Test fun encryptedHomeOrderIsIndependentAndHiddenPinnedAppsStayExcluded() {
         val catalog=com.nexvary.veil.launcher.AppCatalog(context)
         val target=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true).first { !it.privateSpace }

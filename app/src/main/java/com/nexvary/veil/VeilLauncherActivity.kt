@@ -51,6 +51,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     private val handler=Handler(Looper.getMainLooper())
     private var dialog: AlertDialog?=null
     private var catalogCallback: android.content.pm.LauncherApps.Callback?=null
+    private var refreshCatalog: (() -> Unit)?=null
     private val expiry=object: Runnable {
         override fun run() {
             if(session.current()!=renderedProfile) emergency()
@@ -71,7 +72,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         }
         if(Build.VERSION.SDK_INT>=33) registerReceiver(profileReceiver,filter,Context.RECEIVER_NOT_EXPORTED) else registerReceiver(profileReceiver,filter)
         privateLockConfirmed=space.lockAll()
-        catalogCallback=catalog.observe { if(!isDestroyed && page=="home") showLauncher() }
+        catalogCallback=catalog.observe { if(!isDestroyed && page=="home") refreshCatalog?.invoke() }
         showLauncher()
     }
     override fun onResume() {
@@ -87,6 +88,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
     }
     override fun onDestroy() {
         catalogCallback?.let(catalog::stopObserving)
+        refreshCatalog=null
         generation++; wizardFields.forEach { it.text.clear() }; wizardFields=emptyList(); backAction=null; dialog?.dismiss(); handler.removeCallbacksAndMessages(null); worker.shutdownNow()
         unregisterReceiver(profileReceiver); super.onDestroy()
     }
@@ -105,6 +107,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         // Unconfirmed platform lock is reported only inside the authenticated center.
     }
     private fun showLauncher(openDrawer: Boolean=false) {
+        refreshCatalog=null
         drawerOpen=openDrawer
         page="home"; backAction=if(openDrawer) ({ showLauncher() }) else null
         wizardFields.forEach { it.text.clear() }; wizardFields=emptyList()
@@ -151,7 +154,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
         }
         root.addView(grid,LinearLayout.LayoutParams(-1,0,1f))
         // Filter one policy-checked snapshot while typing. Resume/profile broadcasts rebuild it.
-        val snapshot=if(storageFailed) emptyList() else catalog.load(config.policy(profile))
+        var snapshot=if(storageFailed) emptyList() else catalog.load(config.policy(profile))
         val dock=GridView(this).apply {
             id=R.id.home_dock; numColumns=2; stretchMode=GridView.STRETCH_COLUMN_WIDTH
             background=VeilUi.card();selector=android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
@@ -204,6 +207,15 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             dock.setOnItemClickListener { _,_,position,_ -> launch(dockEntries[position]) }
         }
         render(""); search.addTextChangedListener(SimpleTextWatcher { render(it) })
+        // Package broadcasts (especially after boot) must not replace the clock
+        // mid-gesture or erase an active query/PIN dialog. Refilter in place.
+        refreshCatalog={
+            if(session.current()!=profile) emergency()
+            else {
+                snapshot=if(storageFailed) emptyList() else catalog.load(config.policy(profile))
+                render(search.text.toString())
+            }
+        }
         if(profile==VeilProfile.PRIVACY && !config.hidePrivate && !storageFailed) {
             val privateProfiles=space.profiles()
             if(privateProfiles.isNotEmpty()) {
@@ -219,7 +231,7 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                     columnWidth=tileColumnWidth(); numColumns=GridView.AUTO_FIT; stretchMode=GridView.STRETCH_COLUMN_WIDTH
                     horizontalSpacing=VeilUi.dp(this@VeilLauncherActivity,4); verticalSpacing=VeilUi.dp(this@VeilLauncherActivity,8)
                 }
-                val items=catalog.load(config.policy(profile),includePrivate=true).filter { it.privateSpace }.map { Tile(it.label,it) }
+                var items=catalog.load(config.policy(profile),includePrivate=true).filter { it.privateSpace }.map { Tile(it.label,it) }
                 privateGrid.adapter=TileAdapter(items)
                 privateGrid.setOnItemClickListener { _,_,position,_ ->
                     if(session.current()!=VeilProfile.PRIVACY) { emergency(); return@setOnItemClickListener }
@@ -228,7 +240,17 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
                     if(app!=null && app.decision.launchRealTarget) catalog.launch(app)
                     else if(app!=null) utility(app.decision.iconOverrideKey ?: "calculator")
                 }
-                if(items.isNotEmpty()) root.addView(privateGrid,LinearLayout.LayoutParams(-1,0,1f))
+                root.addView(privateGrid,LinearLayout.LayoutParams(-1,0,1f))
+                privateGrid.visibility=if(items.isEmpty()) View.GONE else View.VISIBLE
+                val refreshOrdinary=refreshCatalog
+                refreshCatalog={
+                    refreshOrdinary?.invoke()
+                    if(session.current()==profile) {
+                        items=catalog.load(config.policy(profile),includePrivate=true).filter { it.privateSpace }.map { Tile(it.label,it) }
+                        privateGrid.adapter=TileAdapter(items)
+                        privateGrid.visibility=if(items.isEmpty()) View.GONE else View.VISIBLE
+                    }
+                }
             }
         }
         if(profile==VeilProfile.PRIVACY) {
