@@ -130,7 +130,12 @@ class LauncherFlowTest {
             })
             ActivityScenario.launch<VeilLauncherActivity>(Intent(context,VeilLauncherActivity::class.java)).use { scenario ->
                 onView(withId(R.id.home_dock)).check(matches(isDisplayed()))
-                scenario.onActivity { capture(it,"configured-home-ar") }
+                scenario.onActivity {
+                    val grid=it.findViewById<android.widget.GridView>(R.id.app_grid)
+                    Assert.assertEquals("Home must start with its first shortcut",0,grid.firstVisiblePosition)
+                    Assert.assertTrue("First shortcut must not be clipped above the grid",grid.getChildAt(0).top>=grid.paddingTop)
+                    capture(it,"configured-home-ar")
+                }
                 onView(withId(R.id.open_drawer)).perform(click())
                 onView(withText(R.string.back)).check(matches(isDisplayed()))
                 scenario.onActivity { capture(it,"configured-drawer-ar") }

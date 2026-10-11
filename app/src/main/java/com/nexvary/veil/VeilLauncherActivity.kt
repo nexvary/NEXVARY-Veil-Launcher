@@ -191,7 +191,9 @@ class VeilLauncherActivity : androidx.activity.ComponentActivity() {
             val visible=if(drawerOpen) entries.distinctBy { it.label.lowercase(java.util.Locale.ROOT) } else homeKeys.mapNotNull { key -> entries.firstOrNull { it.key()==key } }
             val columns=((resources.configuration.screenWidthDp-40)/(66*resources.configuration.fontScale.coerceAtLeast(1f))).toInt().coerceAtLeast(1)
             grid.numColumns=if(drawerOpen) GridView.AUTO_FIT else visible.size.coerceAtLeast(1).coerceAtMost(columns)
-            grid.setStackFromBottom(!drawerOpen)
+            // Start at the first complete row when a small screen needs scrolling.
+            // Bottom stacking otherwise opens with the first home icon clipped.
+            grid.setStackFromBottom(false)
             grid.adapter=TileAdapter(visible)
             empty.visibility=if(visible.isEmpty()) View.VISIBLE else View.GONE
             grid.setOnItemClickListener { _,_,position,_ -> launch(visible[position]) }
