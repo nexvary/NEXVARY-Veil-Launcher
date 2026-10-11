@@ -3,31 +3,39 @@
 Privacy-first Android launcher focused on **application identity virtualization**: apps can be represented inside the launcher with decoy names/icons, hidden from ordinary launcher surfaces, and revealed through user-defined authenticated actions.
 
 ## Status
-Foundation / pre-alpha. Do not rely on Veil as the sole protection for sensitive data.
+0.2.0-alpha03 development milestone. This is not a release candidate; see the security review and the latest CI for verified results and remaining device/OEM checks.
 
-## Architecture direction
-- Launcher foundation: Android Launcher3 / Lawnchair 16 concepts and compatible Apache-2.0 components where adopted.
-- Veil Engine: NEXVARY-owned privacy layer kept logically separate from upstream launcher code.
-- Local-first: disguise mappings and secret actions are stored locally; no cloud dependency is required.
-- Android 15+: optional Private Space integration when Veil is the default HOME app and the platform permits access.
-- Graceful fallback: visual hiding is never described as OS-level removal. Apps may remain visible in Android Settings or other privileged/system surfaces.
+## Implemented paths
+- Encrypted multi-PIN setup and PRIVACY / DECOY / optional NORMAL routing.
+- Keystore AES-GCM config, salted PBKDF2-HMAC-SHA256 verifiers, persistent failed-attempt backoff, expiring memory-only sessions.
+- Default fail-closed DECOY after recreation/process restart, manual lock and configurable emergency Search long-press.
+- Profile allowlists and exact component/user visibility rules; adaptive grid, substituted labels and vector icon presets.
+- Functional local Calculator, Notes and Clock; local Decoy Settings, including brightness, sound, language and appearance.
+- LauncherApps exact-component launching and Android 15+ Private Space runtime gates, quiet-state filtering and separate lockable/hideable container.
+- Arabic RTL and English resources, window insets and AndroidX gesture Back.
+- Unit tests, Android 14/15/16 instrumentation matrix, lint, debug artifacts and source security/leakage documentation.
 
-## Planned Veil Engine
-1. Identity virtualization — per-app decoy label and icon.
-2. Hidden-app policy — remove selected apps from normal drawer/search surfaces.
-3. Secret Action Router — user-defined codes/gestures that resolve to protected targets.
-4. Decoy surfaces — benign functional screens such as Notes/Clock/Calculator.
-5. Veil profiles — Normal, Privacy, and Decoy presentation profiles.
-6. Authentication gate — device credential/biometric/PIN policies.
-7. Emergency Veil — rapidly return to a safe presentation state.
-8. Android Private Space bridge — standards-compliant profile container integration where supported.
+## First use
+1. Open Veil, read the introduction and choose Set up profiles.
+2. Follow the three steps for distinct 6–12-digit Private and Alternative PINs, with confirmations, then review how to open and lock each environment. Limited PIN is optional.
+3. In Control Center choose Use as default Home.
+4. Configure each profile's app allowlist and presentation. Empty DECOY/NORMAL lists show only local utilities.
+5. Long press the home clock to enter a PIN. Long press Search for Emergency Veil (can be disabled in Control Center).
+6. Private Space needs Android 15+, the default Home role, an existing private profile and OS authorization. Android 16 adds its platform settings link.
 
-## Security principles
-- No plaintext storage of secret codes.
-- No network permission for the Veil Engine unless a feature explicitly requires it.
-- Fail closed for protected launcher search results.
-- Avoid deceptive claims: launcher hiding is distinct from OS-level app hiding.
-- Threat model and limitations are documented before stable release.
+No automatic destructive wiping. There is no PIN recovery bypass: remember both codes. Android system surfaces remain accessible in STANDARD. See [threat model](docs/THREAT_MODEL.md), [leakage matrix](docs/THREAT_MATRIX.md) and [security review](docs/SECURITY_REVIEW.md).
+
+See the [interaction guide](docs/USABILITY.md) for the new onboarding, app-management and utility flows.
+
+## Development checks
+With Android SDK 36, JDK 17 and Gradle 8.13:
+
+```sh
+gradle testDebugUnitTest lintDebug assembleDebug
+gradle connectedDebugAndroidTest
+```
+
+Application ID: `com.nexvary.veil`. minSdk 28; compileSdk/targetSdk 36. Architecture remains the existing single Android application with logically separated core/auth/storage/bridge/decoy packages; no replacement foundation was introduced.
 
 ## Upstream and licensing
 Lawnchair 16 is being evaluated as the primary launcher foundation. Lawnchair documents its project license as Apache License 2.0. Any adopted upstream code will retain required copyright/license notices and significant modifications will be documented. Lawnchair names/logos/trademarks are not part of NEXVARY branding.
@@ -39,3 +47,8 @@ Android 15 and Android 16 first, with compatibility evaluated for earlier suppor
 
 ## Package
 `com.nexvary.veil`
+
+## Lifecycle verification
+CI also runs `python3 scripts/verify_lifecycle.py` after the normal instrumented suite. It installs the debug and test APKs on a disposable emulator, authenticates using synthetic test data, kills the actual process, then reboots the actual emulator during a second authenticated session. It checks concealed startup and authenticates again with the retained encrypted configuration. It refuses physical devices. Evidence is `ui-proof/lifecycle-result.json`, XML hierarchies and instrumentation transcripts in each Android test artifact. The fixture is excluded from the normal suite and never compiled into the shipping APK.
+
+CI also produces an **unsigned release build**, separate from Debug. It is a build-validation artifact, not an installable signed release or release candidate. Production signing and physical OEM verification remain required.
