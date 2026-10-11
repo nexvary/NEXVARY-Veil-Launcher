@@ -17,3 +17,11 @@
 - Search opens a distinct drawer. Back, emergency and session expiration rebuild the correct home; private labels and queries are not restored from saved instance state.
 - New tests cover drawer controls and gesture, encrypted profile-specific order, hidden pinned identities, and real shortcut selection/reordering via the management UI.
 - Runtime validation for this revision must be recorded after CI; the alpha04 result is not evidence for this code. Permanent signing, physical OEM verification, broader accessibility review, custom icon import and managed enforcement remain outstanding.
+
+### Launchable-package discovery
+The manifest declares ACTION_MAIN/CATEGORY_LAUNCHER package visibility so the
+protected app picker can discover ordinary apps before HOME role assignment.
+This is scoped launchable-app discovery, not QUERY_ALL_PACKAGES. Existing
+allowlists, presentation rules, Private Space filtering and click-time policy
+checks still govern every exposed entry. The emulator test compares the catalog
+against an independent system launcher inventory for ordinary fixture packages.

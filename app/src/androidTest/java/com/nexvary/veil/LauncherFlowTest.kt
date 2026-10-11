@@ -117,7 +117,12 @@ class LauncherFlowTest {
             val preferred=setOf("com.android.camera2","com.android.contacts","com.android.dialer","com.android.calendar","com.android.documentsui","com.android.messaging","com.google.android.apps.maps","com.android.chrome","com.android.gallery3d")
             val apps=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true)
                 .filter { !it.privateSpace && it.packageName in preferred }.distinctBy { it.identity }.take(6)
-            Assert.assertTrue("Emulator must contain real apps for visual coverage",apps.isNotEmpty())
+            val systemLaunchers=shell("cmd package query-activities --brief --user 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER")
+            val expected=preferred.filter { systemLaunchers.contains("$it/") }.toSet()
+            Assert.assertTrue("System inventory must provide ordinary app coverage",expected.isNotEmpty())
+            val discovered=catalog.load(com.nexvary.veil.core.ProfilePolicy(VeilProfile.PRIVACY),unfiltered=true).filter { !it.privateSpace }.map { it.packageName }.toSet()
+            Assert.assertTrue("Launcher catalog must include system-reported apps: ${expected-discovered}",discovered.containsAll(expected))
+            Assert.assertTrue("Approved app fixture must not be empty",apps.isNotEmpty())
             // Explicit disposable-fixture choices, never production auto-selection.
             VeilStore(context).save(VeilStore(context).load().apply {
                 allowlists[VeilProfile.DECOY]=apps.map { "${it.packageName}|${it.identity.userSerial}" }.toSet()

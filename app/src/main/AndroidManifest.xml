@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <queries>
+        <!-- Discover launchable apps on Android 11+ before HOME is selected.
+             Visibility here does not grant approval in any Veil environment. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
         <intent><action android:name="android.settings.SETTINGS" /></intent>
     </queries>
 
